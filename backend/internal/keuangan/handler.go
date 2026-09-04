@@ -18,13 +18,17 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
-	r := app.Group("/keuangan")
-	r.Use(mw.AuthRequired)
+	// Webhook Xendit WAJIB publik — callback dari server Xendit (tanpa Bearer token).
+	// Sebelumnya terdaftar di bawah grup /keuangan yang pakai AuthRequired → selalu 401.
+	app.Post("/keuangan/webhook/xendit", h.WebhookXendit)
 
+	r := app.Group("/keuangan", mw.AuthRequired)
 	r.Get("/tagihan", h.GetTagihan)
-	r.Post("/tagihan/generate", h.GenerateTagihan)
 	r.Post("/tagihan/:id/bayar", h.BayarTagihan)
-	r.Post("/webhook/xendit", h.WebhookXendit)
+
+	// Generate tagihan hanya untuk pengurus RT / super admin
+	g := app.Group("/keuangan", mw.RoleRequired("ketua_rt", "super_admin"))
+	g.Post("/tagihan/generate", h.GenerateTagihan)
 }
 
 func (h *Handler) BayarTagihan(c fiber.Ctx) error {
@@ -56,7 +60,8 @@ func (h *Handler) BayarTagihan(c fiber.Ctx) error {
 }
 
 func (h *Handler) GetTagihan(c fiber.Ctx) error {
-	tenantID, _ := strconv.Atoi(c.Query("tenant_id", "1"))
+	// Tenant diambil dari JWT, bukan query param
+	tenantID := c.Locals("tenant_id").(int)
 	status := c.Query("status", "")
 	data, err := h.service.GetTagihanByTenant(tenantID, status)
 	if err != nil {
@@ -66,8 +71,7 @@ func (h *Handler) GetTagihan(c fiber.Ctx) error {
 }
 
 type generateReq struct {
-	TenantID int    `json:"tenant_id"`
-	Periode  string `json:"periode"`
+	Periode string `json:"periode"`
 }
 
 func (h *Handler) GenerateTagihan(c fiber.Ctx) error {
@@ -75,7 +79,12 @@ func (h *Handler) GenerateTagihan(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
-	created, err := h.service.GenerateTagihanBulk(req.TenantID, req.Periode)
+	if req.Periode == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "periode wajib diisi (YYYY-MM)"})
+	}
+	// Tenant dari JWT — jangan percaya body
+	tenantID := c.Locals("tenant_id").(int)
+	created, err := h.service.GenerateTagihanBulk(tenantID, req.Periode)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -90,9 +99,9 @@ func (h *Handler) WebhookXendit(c fiber.Ctx) error {
 	}
 
 	var payload struct {
-		ID          string `json:"id"`
-		Status      string `json:"status"`
-		ExternalID  string `json:"external_id"`
+		ID         string `json:"id"`
+		Status     string `json:"status"`
+		ExternalID string `json:"external_id"`
 	}
 	if err := c.Bind().JSON(&payload); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid payload"})

@@ -3,8 +3,8 @@ package model
 import "time"
 
 type User struct {
-	ID           int       `gorm:"column:id_user;primaryKey;autoIncrement"`
-	TenantID     int       `gorm:"column:id_tenant;not null"`
+	ID           int       `gorm:"column:id_user;type:int;primaryKey;autoIncrement"`
+	TenantID     int       `gorm:"column:id_tenant;type:int;not null"`
 	NomorWA      string    `gorm:"column:nomor_wa;size:20;not null;uniqueIndex"`
 	PasswordHash string    `gorm:"column:password_hash;not null"`
 	Role         string    `gorm:"column:role;size:30;not null;default:warga"`
@@ -15,7 +15,7 @@ type User struct {
 }
 
 type Tenant struct {
-	ID               int       `gorm:"column:id_tenant;primaryKey;autoIncrement"`
+	ID               int       `gorm:"column:id_tenant;type:int;primaryKey;autoIncrement"`
 	NamaRTRW         string    `gorm:"column:nama_rt_rw;size:100;not null"`
 	DesaKelurahan    string    `gorm:"column:desa_kelurahan;size:100"`
 	Kecamatan        string    `gorm:"column:kecamatan;size:100"`

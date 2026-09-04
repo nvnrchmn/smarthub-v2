@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -15,20 +16,28 @@ func NewAuthMiddleware(j *jwt.JWT) *AuthMiddleware {
 	return &AuthMiddleware{j: j}
 }
 
+var (
+	errNoToken    = errors.New("token tidak ditemukan")
+	errBadFormat  = errors.New("format token tidak valid")
+	errBadToken   = errors.New("token tidak valid")
+)
+
 // resolve memvalidasi token & mengisi locals. TANPA c.Next() — aman dipanggil
 // dari middleware lain (mencegah double-Next & race di role check).
+// Mengembalikan error SENTINEL saat gagal; caller (AuthRequired/RoleRequired)
+// yang menuliskan respons 401 agar error JSON tidak bocor ke ErrorHandler.
 func (m *AuthMiddleware) resolve(c fiber.Ctx) error {
 	auth := c.Get("Authorization")
 	if auth == "" {
-		return c.Status(401).JSON(fiber.Map{"error": "token tidak ditemukan"})
+		return errNoToken
 	}
 	parts := strings.Split(auth, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return c.Status(401).JSON(fiber.Map{"error": "format token tidak valid"})
+		return errBadFormat
 	}
 	claims, err := m.j.Validate(parts[1])
 	if err != nil {
-		return c.Status(401).JSON(fiber.Map{"error": "token tidak valid"})
+		return errBadToken
 	}
 	c.Locals("user_id", claims.UserID)
 	c.Locals("tenant_id", claims.TenantID)
@@ -38,7 +47,9 @@ func (m *AuthMiddleware) resolve(c fiber.Ctx) error {
 
 func (m *AuthMiddleware) AuthRequired(c fiber.Ctx) error {
 	if err := m.resolve(c); err != nil {
-		return err
+		// return error SENTINEL langsung → ErrorHandler global akan mengubahnya
+		// jadi 500; karena itu tulis 401 di sini & hentikan rantai (return nil).
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Next()
 }
@@ -46,7 +57,7 @@ func (m *AuthMiddleware) AuthRequired(c fiber.Ctx) error {
 func (m *AuthMiddleware) RoleRequired(roles ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if err := m.resolve(c); err != nil {
-			return err
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 		}
 		role, _ := c.Locals("role").(string)
 		for _, r := range roles {
@@ -54,6 +65,6 @@ func (m *AuthMiddleware) RoleRequired(roles ...string) fiber.Handler {
 				return c.Next()
 			}
 		}
-		return c.Status(403).JSON(fiber.Map{"error": "akses ditolak"})
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "akses ditolak"})
 	}
 }

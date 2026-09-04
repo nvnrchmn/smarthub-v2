@@ -17,10 +17,16 @@ func (r *Repository) CreateWarga(warga *model.Warga) error {
 	return r.db.Create(warga).Error
 }
 
-func (r *Repository) GetWargaByRumah(rumahID int) ([]model.Warga, error) {
+func (r *Repository) GetWargaByRumah(rumahID, tenantID int) ([]model.Warga, error) {
 	var wargas []model.Warga
-	err := r.db.Where("id_rumah = ?", rumahID).Order("nama_lengkap").Find(&wargas).Error
+	err := r.db.Where("id_rumah = ? AND id_tenant = ?", rumahID, tenantID).Order("nama_lengkap").Find(&wargas).Error
 	return wargas, err
+}
+
+func (r *Repository) RumahExists(rumahID, tenantID int) bool {
+	var n int64
+	r.db.Table("rumah").Where("id_rumah = ? AND id_tenant = ?", rumahID, tenantID).Count(&n)
+	return n > 0
 }
 
 func (r *Repository) GetWargaByTenant(tenantID int) ([]model.Warga, error) {

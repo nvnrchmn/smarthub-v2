@@ -44,6 +44,9 @@ func (s *Service) Login(input LoginInput) (*LoginResponse, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
 		return nil, errors.New("nomor WA atau password salah")
 	}
+	if !user.IsActive {
+		return nil, errors.New("akun dinonaktifkan, hubungi pengurus RT")
+	}
 	token, err := s.jwt.Generate(user.ID, user.TenantID, user.Role)
 	if err != nil {
 		return nil, err
@@ -70,6 +73,13 @@ func (s *Service) Register(input RegisterInput) (*model.User, error) {
 	if len(input.Password) < 6 {
 		return nil, errors.New("password minimal 6 karakter")
 	}
+	// Registrasi publik HANYA untuk warga — cegah self-register jadi super_admin/ketua_rt
+	if input.Role != "" && input.Role != "warga" {
+		return nil, errors.New("registrasi publik hanya untuk role warga")
+	}
+	if input.TenantID <= 0 || !s.repo.TenantExists(input.TenantID) {
+		return nil, errors.New("RT tidak ditemukan")
+	}
 	existing, _ := s.repo.GetUserByNomorWA(input.NomorWA)
 	if existing != nil {
 		return nil, errors.New("nomor WA sudah terdaftar")
@@ -81,11 +91,8 @@ func (s *Service) Register(input RegisterInput) (*model.User, error) {
 	user := &model.User{
 		NomorWA:      input.NomorWA,
 		PasswordHash: string(hash),
-		Role:         input.Role,
+		Role:         "warga",
 		TenantID:     input.TenantID,
-	}
-	if user.Role == "" {
-		user.Role = "warga"
 	}
 	if err := s.repo.CreateUser(user); err != nil {
 		return nil, err

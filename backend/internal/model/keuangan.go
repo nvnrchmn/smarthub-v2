@@ -30,10 +30,10 @@ type TagihanIuran struct {
 func (TagihanIuran) TableName() string { return "tagihan_iuran" }
 
 type DetailTagihan struct {
-	IDDetail   int     `gorm:"column:id_detail;primaryKey;autoIncrement" json:"id_detail"`
-	IDTagihan  int     `gorm:"column:id_tagihan" json:"id_tagihan"`
-	NamaIuran  string  `gorm:"column:nama_iuran;size:100;not null" json:"nama_iuran"`
-	Nominal    float64 `gorm:"column:nominal;type:decimal(12,2);not null" json:"nominal"`
+	IDDetail  int     `gorm:"column:id_detail;primaryKey;autoIncrement" json:"id_detail"`
+	IDTagihan int     `gorm:"column:id_tagihan" json:"id_tagihan"`
+	NamaIuran string  `gorm:"column:nama_iuran;size:100;not null" json:"nama_iuran"`
+	Nominal   float64 `gorm:"column:nominal;type:decimal(12,2);not null" json:"nominal"`
 }
 
 func (DetailTagihan) TableName() string { return "detail_tagihan_iuran" }

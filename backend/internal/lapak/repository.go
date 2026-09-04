@@ -17,9 +17,9 @@ func (r *Repository) Create(p *model.Produk) error {
 	return r.db.Create(p).Error
 }
 
-func (r *Repository) GetAll() ([]model.Produk, error) {
+func (r *Repository) GetAll(tenantID int) ([]model.Produk, error) {
 	var produk []model.Produk
-	err := r.db.Order("created_at DESC").Find(&produk).Error
+	err := r.db.Where("id_tenant = ?", tenantID).Order("created_at DESC").Find(&produk).Error
 	return produk, err
 }
 

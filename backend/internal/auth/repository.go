@@ -30,6 +30,12 @@ func (r *Repository) CreateTenant(tenant *model.Tenant) error {
 	return r.db.Create(tenant).Error
 }
 
+func (r *Repository) TenantExists(tenantID int) bool {
+	var n int64
+	r.db.Table("tenants").Where("id_tenant = ?", tenantID).Count(&n)
+	return n > 0
+}
+
 func (r *Repository) CreateUser(user *model.User) error {
 	return r.db.Create(user).Error
 }

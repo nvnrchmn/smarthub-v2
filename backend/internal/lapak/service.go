@@ -15,3 +15,7 @@ func NewService(repo *Repository) *Service {
 func (s *Service) Create(p *model.Produk) error {
 	return s.repo.Create(p)
 }
+
+func (s *Service) GetAll(tenantID int) ([]model.Produk, error) {
+	return s.repo.GetAll(tenantID)
+}

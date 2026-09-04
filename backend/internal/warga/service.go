@@ -16,8 +16,12 @@ func (s *Service) CreateWarga(warga *model.Warga) error {
 	return s.repo.CreateWarga(warga)
 }
 
-func (s *Service) GetWargaByRumah(rumahID int) ([]model.Warga, error) {
-	return s.repo.GetWargaByRumah(rumahID)
+func (s *Service) GetWargaByRumah(rumahID, tenantID int) ([]model.Warga, error) {
+	return s.repo.GetWargaByRumah(rumahID, tenantID)
+}
+
+func (s *Service) RumahExists(rumahID, tenantID int) bool {
+	return s.repo.RumahExists(rumahID, tenantID)
 }
 
 func (s *Service) GetWargaByTenant(tenantID int) ([]model.Warga, error) {

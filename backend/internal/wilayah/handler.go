@@ -18,15 +18,19 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/wilayah")
-	r.Use(mw.AuthRequired)
-	r.Get("/rumah", h.GetRumahByTenant)
-	r.Post("/rumah", h.CreateRumah)
-	r.Put("/rumah/:id", h.UpdateRumah)
-	r.Delete("/rumah/:id", h.DeleteRumah)
+	r.Get("/rumah", mw.AuthRequired, h.GetRumahByTenant)
+
+	// Mutasi data rumah hanya untuk pengurus RT (ketua_rt / super_admin)
+	m := app.Group("/wilayah")
+	m.Use(mw.RoleRequired("ketua_rt", "super_admin"))
+	m.Post("/rumah", h.CreateRumah)
+	m.Put("/rumah/:id", h.UpdateRumah)
+	m.Delete("/rumah/:id", h.DeleteRumah)
 }
 
 func (h *Handler) GetRumahByTenant(c fiber.Ctx) error {
-	tenantID, _ := strconv.Atoi(c.Query("tenant_id", "1"))
+	// Tenant diambil dari JWT, bukan query param
+	tenantID := c.Locals("tenant_id").(int)
 	rumahs, err := h.service.GetRumahByTenant(tenantID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
@@ -48,7 +52,7 @@ func (h *Handler) CreateRumah(c fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
 	rumah := &model.Rumah{
-		TenantID:      req.TenantID,
+		TenantID:      c.Locals("tenant_id").(int), // dipaksa dari JWT, bukan body
 		NamaJalanGang: req.NamaJalanGang,
 		NomorRumah:    req.NomorRumah,
 		StatusHunian:  req.StatusHunian,
@@ -64,13 +68,16 @@ func (h *Handler) CreateRumah(c fiber.Ctx) error {
 
 func (h *Handler) UpdateRumah(c fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
+	tenantID := c.Locals("tenant_id").(int)
+
+	existing, err := h.service.GetRumahByID(id)
+	if err != nil || existing.TenantID != tenantID {
+		return c.Status(404).JSON(fiber.Map{"error": "rumah tidak ditemukan"})
+	}
+
 	var req rumahRequest
 	if err := c.Bind().JSON(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
-	}
-	existing, err := h.service.GetRumahByID(id)
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "rumah tidak ditemukan"})
 	}
 	if req.NamaJalanGang != "" {
 		existing.NamaJalanGang = req.NamaJalanGang
@@ -89,6 +96,12 @@ func (h *Handler) UpdateRumah(c fiber.Ctx) error {
 
 func (h *Handler) DeleteRumah(c fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
+	tenantID := c.Locals("tenant_id").(int)
+
+	existing, err := h.service.GetRumahByID(id)
+	if err != nil || existing.TenantID != tenantID {
+		return c.Status(404).JSON(fiber.Map{"error": "rumah tidak ditemukan"})
+	}
 	if err := h.service.DeleteRumah(id); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}

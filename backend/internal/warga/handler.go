@@ -18,12 +18,15 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/warga")
-	r.Use(mw.AuthRequired)
-	r.Get("/", h.GetWargaByTenant)
-	r.Get("/rumah/:rumah_id", h.GetWargaByRumah)
-	r.Post("/", h.CreateWarga)
-	r.Put("/:id", h.UpdateWarga)
-	r.Delete("/:id", h.DeleteWarga)
+	r.Get("/", mw.AuthRequired, h.GetWargaByTenant)
+	r.Get("/rumah/:rumah_id", mw.AuthRequired, h.GetWargaByRumah)
+
+	// Mutasi data warga hanya untuk pengurus RT (ketua_rt / super_admin)
+	m := app.Group("/warga")
+	m.Use(mw.RoleRequired("ketua_rt", "super_admin"))
+	m.Post("/", h.CreateWarga)
+	m.Put("/:id", h.UpdateWarga)
+	m.Delete("/:id", h.DeleteWarga)
 }
 
 type wargaRequest struct {
@@ -39,7 +42,8 @@ type wargaRequest struct {
 }
 
 func (h *Handler) GetWargaByTenant(c fiber.Ctx) error {
-	tenantID, _ := strconv.Atoi(c.Query("tenant_id", "1"))
+	// Tenant diambil dari JWT, bukan query param
+	tenantID := c.Locals("tenant_id").(int)
 	wargas, err := h.service.GetWargaByTenant(tenantID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
@@ -49,7 +53,8 @@ func (h *Handler) GetWargaByTenant(c fiber.Ctx) error {
 
 func (h *Handler) GetWargaByRumah(c fiber.Ctx) error {
 	rumahID, _ := strconv.Atoi(c.Params("rumah_id"))
-	wargas, err := h.service.GetWargaByRumah(rumahID)
+	tenantID := c.Locals("tenant_id").(int)
+	wargas, err := h.service.GetWargaByRumah(rumahID, tenantID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -61,9 +66,22 @@ func (h *Handler) CreateWarga(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
+	tenantID := c.Locals("tenant_id").(int)
+	if req.NamaLengkap == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "nama lengkap wajib diisi"})
+	}
+	if req.RumahID > 0 && !h.service.RumahExists(req.RumahID, tenantID) {
+		return c.Status(400).JSON(fiber.Map{"error": "rumah tidak ditemukan di RT ini"})
+	}
+	var idUser *int
+	if req.IDUser > 0 {
+		v := req.IDUser
+		idUser = &v
+	}
 	warga := &model.Warga{
-		TenantID:       req.TenantID,
+		TenantID:       tenantID,
 		RumahID:        req.RumahID,
+		IDUser:         idUser,
 		NamaLengkap:    req.NamaLengkap,
 		NIK:            req.NIK,
 		NoKK:           req.NoKK,
@@ -78,28 +96,48 @@ func (h *Handler) CreateWarga(c fiber.Ctx) error {
 
 func (h *Handler) UpdateWarga(c fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
+	tenantID := c.Locals("tenant_id").(int)
+
+	existing, err := h.service.GetWargaByID(id)
+	if err != nil || existing.TenantID != tenantID {
+		return c.Status(404).JSON(fiber.Map{"error": "warga tidak ditemukan"})
+	}
+
 	var req wargaRequest
 	if err := c.Bind().JSON(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
-	warga := &model.Warga{
-		ID:             id,
-		TenantID:       req.TenantID,
-		RumahID:        req.RumahID,
-		NamaLengkap:    req.NamaLengkap,
-		NIK:            req.NIK,
-		NoKK:           req.NoKK,
-		StatusHubungan: req.StatusHubungan,
-		StatusWarga:    req.StatusWarga,
+	// Overlay: hanya field yang dikirim yang diubah; sisanya pertahankan nilai
+	// existing (cek status_hubungan dll adalah enum — string kosong = data truncated)
+	if req.NamaLengkap != "" {
+		existing.NamaLengkap = req.NamaLengkap
 	}
-	if err := h.service.UpdateWarga(warga); err != nil {
+	if req.NIK != "" {
+		existing.NIK = req.NIK
+	}
+	if req.NoKK != "" {
+		existing.NoKK = req.NoKK
+	}
+	if req.StatusHubungan != "" {
+		existing.StatusHubungan = req.StatusHubungan
+	}
+	if req.StatusWarga != "" {
+		existing.StatusWarga = req.StatusWarga
+	}
+	if err := h.service.UpdateWarga(existing); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(warga)
+	return c.JSON(existing)
 }
 
 func (h *Handler) DeleteWarga(c fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
+	tenantID := c.Locals("tenant_id").(int)
+
+	existing, err := h.service.GetWargaByID(id)
+	if err != nil || existing.TenantID != tenantID {
+		return c.Status(404).JSON(fiber.Map{"error": "warga tidak ditemukan"})
+	}
 	if err := h.service.DeleteWarga(id); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
