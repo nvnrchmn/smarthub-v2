@@ -1,0 +1,27 @@
+# Smarthub v2 — Project Context
+
+## Status (2026-09-04)
+Fase 0-7 + UI/UX layer restructure SELESAI. Live: https://smarthub.logikraf.id
+Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), port 8082.
+
+## Tech Stack
+- Backend: Go 1.25 + Fiber v3 + GORM + MySQL (root di env, jangan disimpan di config) + Redis + JWT (HS256) + AES-256-GCM
+- Frontend: React 18 + Vite + react-router + Tailwind v4 + Plus Jakarta Sans; dark/light theme, warna primary #1B6B4A (hijau toska)
+- Deploy: VPS 103.197.188.248 aaPanel; service systemd `smarthub-server` di /usr/local/bin; frontend rsync ke /www/wwwroot/smarthub.logikraf.id; nginx SPA fallback + proxy_pass 127.0.0.1:8082/ (strip /api)
+- CI/CD: commit + push GitHub → deploy manual scp/rsync (belum ada GitHub Actions)
+
+## Arsitektur
+- Multi-tenancy: roles `super_admin` (panel /admin), `ketua_rt` (panel /rt), `warga` (app mobile /app), Public (/)
+- Clean architecture per modul: internal/{auth,wilayah,warga,keuangan,forum,lapak,admin}/{repository,service,handler}.go
+- Model GORM wajib `TableName()` eksplisit (tabel non-plural: rumah, warga)
+- Route API TANPA prefix /api di router Fiber (nginx yang strip); `/admin/*` khusus super_admin
+- Middleware auth.go: `resolve()` validasi token + set locals (TANPA c.Next()) — dipakai AuthRequired & RoleRequired. JANGAN panggil AuthRequired dari middleware lain (double-Next → panic)
+- DB: 10 tabel inti + forum_threads/forum_komentar/lapak_warga; seed 2 tenant, 6 user
+
+## Docs acuan (baca dulu sebelum kerja)
+docs/{PRD,Architecture,Design,DDL,task}.md di root repo
+
+## Konvensi
+- UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA
+- Frontend fetch via /api/... (helper src/lib/api.ts); role guard ProtectedRoute per layer
+- Backup cron VPS: 03:00 → /www/backup/smarthub
