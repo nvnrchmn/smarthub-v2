@@ -1,7 +1,7 @@
 # Smarthub v2 — Project Context
 
 ## Status (2026-09-05)
-Fase 0-7 + UI/UX layer restructure SELESAI. Live: https://smarthub.logikraf.id
+Fase 0-7 + UI/UX layer restructure + bento grid dashboard (10 heuristik UX) SELESAI. Live: https://smarthub.logikraf.id
 Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), port 8082.
 
 ## Tech Stack
@@ -25,6 +25,8 @@ Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), po
 docs/{PRD,Architecture,Design,DDL,task}.md di root repo
 
 ## Konvensi
-- UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA
+- UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA; mode gelap otomatis via prefers-color-scheme (token warna = CSS var di index.css)
+- Komponen UI: pakai `components/ui/bento.tsx` (BentoCard/KPI/ActionTile/Skeleton/EmptyState/ErrorState) & `Icon.tsx` (SVG, JANGAN emoji) — lihat docs/UX-HEURISTICS.md (10 heuristik Nielsen & psikologi UX, e3dc1f5)
+- Register publik = warga + auto-login (token langsung) + profil warga dibuat atomik (tx) — jangan CreateUser terpisah
 - Frontend: helper `api(path)` di src/lib/api.ts SUDAH prepend BASE '/api' — panggil `api('/forum')`, JANGAN `api('/api/forum')` (double-prefix → 404/500, bug 2b19e86)
 - Backup cron VPS: 03:00 → /www/backup/smarthub
