@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+@theme {
+  --color-primary: #1B6B4A;
+  --color-primary-50: #EBF5F0;
+  --color-primary-100: #C3E2D4;
+  --color-surface: #F7F8F6;
+  --color-surface-card: #FFFFFF;
+  --color-text-primary: #1A1F1C;
+  --color-text-secondary: #6B7770;
+  --color-text-disabled: #B0BAB6;
+  --color-status-paid: #22C55E;
+  --color-status-pending: #F59E0B;
+  --color-status-overdue: #EF4444;
+  --color-status-empty: #94A3B8;
+  --color-danger: #DC2626;
+  --color-warning: #D97706;
+  --font-family-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+html {
+  font-family: var(--font-family-sans);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+/* scrollbar tipis */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* touch: hilangkan 300ms tap delay */
+button, a { touch-action: manipulation; }
