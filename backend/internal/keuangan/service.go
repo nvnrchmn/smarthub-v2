@@ -83,5 +83,40 @@ func (s *Service) HandleWebhook(invID, status string) error {
 		now := time.Now()
 		return s.repo.UpdateStatusTagihan(tagihan.IDTagihan, "PAID", &now)
 	}
+	if status == "EXPIRED" {
+		return s.repo.UpdateStatusTagihan(tagihan.IDTagihan, "EXPIRED", nil)
+	}
 	return nil
+}
+
+// BayarTagihan membuat invoice Xendit untuk sebuah tagihan (idempotent: invoice
+// aktif yang sudah ada akan dikembalikan, bukan dibuat baru).
+func (s *Service) BayarTagihan(tagihanID, userID, tenantID int, payerEmail, successURL string) (string, error) {
+	var tagihan model.TagihanIuran
+	if err := s.repo.db.Where("id_tagihan = ? AND id_tenant = ?", tagihanID, tenantID).First(&tagihan).Error; err != nil {
+		return "", errors.New("tagihan tidak ditemukan")
+	}
+	if tagihan.StatusBayar == "PAID" {
+		return "", errors.New("tagihan sudah lunas")
+	}
+	if tagihan.XenditInvID != nil && tagihan.XenditPayURL != nil && *tagihan.XenditPayURL != "" {
+		return *tagihan.XenditPayURL, nil // invoice sudah dibuat sebelumnya
+	}
+
+	// Ambil info tenant untuk deskripsi & sub-account (XenPlatform)
+	var tenant model.Tenant
+	_ = s.repo.db.First(&tenant, tenantID).Error
+
+	desc := fmt.Sprintf("Iuran %s — periode %s", tenant.NamaRTRW, tagihan.Periode)
+	inv, err := s.CreateXenditInvoice(tenantID, tagihan.IDTagihan, tagihan.TotalNominal, desc, payerEmail, successURL, tenant.XenditSubID)
+	if err != nil {
+		return "", fmt.Errorf("gagal membuat invoice: %w", err)
+	}
+	if err := s.repo.UpdateXenditInfo(tagihan.IDTagihan, inv.ID, inv.InvoiceURL); err != nil {
+		return "", err
+	}
+	if err := s.repo.db.Model(&model.TagihanIuran{}).Where("id_tagihan = ?", tagihan.IDTagihan).Update("id_user_pembayar", userID).Error; err != nil {
+		return "", err
+	}
+	return inv.InvoiceURL, nil
 }

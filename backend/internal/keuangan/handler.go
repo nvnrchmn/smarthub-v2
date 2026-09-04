@@ -23,7 +23,36 @@ func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware)
 
 	r.Get("/tagihan", h.GetTagihan)
 	r.Post("/tagihan/generate", h.GenerateTagihan)
+	r.Post("/tagihan/:id/bayar", h.BayarTagihan)
 	r.Post("/webhook/xendit", h.WebhookXendit)
+}
+
+func (h *Handler) BayarTagihan(c fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tagihan tidak valid"})
+	}
+	userID := c.Locals("user_id").(int)
+	tenantID := c.Locals("tenant_id").(int)
+
+	// Opsional: email pembayar dari body (tidak wajib)
+	var req struct {
+		PayerEmail string `json:"payer_email"`
+	}
+
+	_ = c.Bind().JSON(&req)
+
+	successURL := os.Getenv("FRONTEND_URL")
+	if successURL == "" {
+		successURL = "https://smarthub.logikraf.id"
+	}
+	successURL = successURL + "/app/tagihan?status=success"
+
+	payURL, err := h.service.BayarTagihan(id, userID, tenantID, req.PayerEmail, successURL)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"payment_url": payURL})
 }
 
 func (h *Handler) GetTagihan(c fiber.Ctx) error {
