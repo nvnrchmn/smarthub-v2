@@ -1,0 +1,16 @@
+{
+  "name": "SmartHub — Manajemen Warga Digital",
+  "short_name": "SmartHub",
+  "description": "Sistem manajemen warga digital RT/RW",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F8F6",
+  "theme_color": "#1B6B4A",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
