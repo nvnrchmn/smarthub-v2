@@ -6,20 +6,27 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/nvnrchmn/smarthub-v2/config"
+	"github.com/nvnrchmn/smarthub-v2/internal/auth"
+	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
 	"github.com/nvnrchmn/smarthub-v2/pkg/database"
+	"github.com/nvnrchmn/smarthub-v2/pkg/encryption"
+	"github.com/nvnrchmn/smarthub-v2/pkg/jwt"
 )
 
 func main() {
 	cfg := config.Load()
-	_ = database.New(cfg)
+	db := database.New(cfg)
+
+	j := jwt.NewJWT()
+	enc := encryption.NewAES()
+
+	authRepo := auth.NewRepository(db.SQL)
+	authService := auth.NewService(authRepo, j, enc)
+	authHandler := auth.NewHandler(authService)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
-			code := fiber.StatusInternalServerError
-			if e, ok := err.(*fiber.Error); ok {
-				code = e.Code
-			}
-			return c.Status(code).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		},
 	})
 
@@ -30,11 +37,24 @@ func main() {
 	}))
 
 	app.Get("/healthz", func(c fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok", "db": "connected"})
+	})
+
+	api := app.Group("/api")
+
+	// Public routes
+	api.Post("/auth/login", authHandler.Login)
+	api.Post("/auth/register", authHandler.Register)
+
+	// Protected routes (contoh)
+	api.Get("/me", middleware.AuthRequired(j), func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status": "ok",
-			"db":     "connected",
+			"user_id":   c.Locals("user_id"),
+			"tenant_id": c.Locals("tenant_id"),
+			"role":      c.Locals("role"),
 		})
 	})
 
-	log.Fatalf("❌ %s", app.Listen(":"+cfg.ServerPort))
+	log.Printf("Smarthub v2 listening on :%s", cfg.ServerPort)
+	log.Fatal(app.Listen(":" + cfg.ServerPort))
 }

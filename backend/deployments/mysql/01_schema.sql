@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS rumah (
     id_rumah INT AUTO_INCREMENT PRIMARY KEY,
-    id_tenant INT NOT NULL,
+    id_tenant INT,
     nama_jalan_gang VARCHAR(100) NOT NULL,
     nomor_rumah VARCHAR(20) NOT NULL,
     status_hunian ENUM('Dihuni','Kosong') DEFAULT 'Dihuni',
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS rumah (
 
 CREATE TABLE IF NOT EXISTS warga (
     id_warga INT AUTO_INCREMENT PRIMARY KEY,
-    id_tenant INT NOT NULL,
+    id_tenant INT,
     id_rumah INT NULL,
     id_user INT NULL,
     nama_lengkap VARCHAR(155) NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS warga (
 
 CREATE TABLE IF NOT EXISTS master_iuran (
     id_master_iuran INT AUTO_INCREMENT PRIMARY KEY,
-    id_tenant INT NOT NULL,
+    id_tenant INT,
     nama_iuran VARCHAR(100) NOT NULL,
     nominal DECIMAL(12,2) NOT NULL,
     is_wajib TINYINT(1) DEFAULT 1,
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS master_iuran (
 
 CREATE TABLE IF NOT EXISTS tagihan_iuran (
     id_tagihan INT AUTO_INCREMENT PRIMARY KEY,
-    id_tenant INT NOT NULL,
+    id_tenant INT,
     id_rumah INT NOT NULL,
     periode_bulan_tahun VARCHAR(7) NOT NULL,
     total_nominal DECIMAL(12,2) NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS detail_tagihan_iuran (
 
 CREATE TABLE IF NOT EXISTS forum_threads (
     id_thread INT AUTO_INCREMENT PRIMARY KEY,
-    id_tenant INT NOT NULL,
+    id_tenant INT,
     id_user_pembuat INT NOT NULL,
     tipe_thread ENUM('Pengumuman','Diskusi') NOT NULL DEFAULT 'Diskusi',
     judul VARCHAR(255) NOT NULL,
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS forum_komentar (
 
 CREATE TABLE IF NOT EXISTS lapak_warga (
     id_produk INT AUTO_INCREMENT PRIMARY KEY,
-    id_tenant INT NOT NULL,
+    id_tenant INT,
     id_user_penjual INT NOT NULL,
     nama_produk_jasa VARCHAR(150) NOT NULL,
     deskripsi TEXT NOT NULL,
