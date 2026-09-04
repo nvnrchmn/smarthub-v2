@@ -26,7 +26,7 @@ export function TagihanSayaPage() {
 
   const load = () => {
     setLoading(true)
-    api(`/api/keuangan/tagihan?tenant_id=${tenantId}`)
+    api(`keuangan/tagihan?tenant_id=${tenantId}`)
       .then((d) => setTagihans(Array.isArray(d) ? d : []))
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -38,7 +38,7 @@ export function TagihanSayaPage() {
     setErr('')
     setBayarId(t.id_tagihan)
     try {
-      const res = await api<{ payment_url: string }>(`/api/keuangan/tagihan/${t.id_tagihan}/bayar`, {
+      const res = await api<{ payment_url: string }>(`keuangan/tagihan/${t.id_tagihan}/bayar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',

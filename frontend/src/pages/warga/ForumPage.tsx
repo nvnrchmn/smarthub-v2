@@ -16,7 +16,7 @@ export function ForumWargaPage() {
   const [form, setForm] = useState({ tipe_thread: 'Diskusi', judul: '', konten: '' })
 
   const load = async () => {
-    const d = await api('/api/forum?tenant_id=1')
+    const d = await api('forum?tenant_id=1')
     setThreads(Array.isArray(d) ? d : [])
     setLoading(false)
   }
@@ -29,7 +29,7 @@ export function ForumWargaPage() {
     e.preventDefault()
     setMsg('')
     try {
-      await api('/api/forum', {
+      await api('forum', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: 1, ...form }),

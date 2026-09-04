@@ -24,7 +24,7 @@ export function RTWargaPage() {
   })
 
   const load = async () => {
-    const d = await api('/api/warga?tenant_id=1')
+    const d = await api('warga?tenant_id=1')
     setWargas(Array.isArray(d) ? d : [])
     setLoading(false)
   }
@@ -37,7 +37,7 @@ export function RTWargaPage() {
     e.preventDefault()
     setMsg('')
     try {
-      await api('/api/warga', {
+      await api('warga', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

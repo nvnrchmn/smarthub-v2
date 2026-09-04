@@ -17,7 +17,7 @@ export function LapakWargaPage() {
   const [form, setForm] = useState({ nama_produk_jasa: '', deskripsi: '', harga: '' })
 
   const load = async () => {
-    const d = await api('/api/lapak?tenant_id=1')
+    const d = await api('lapak?tenant_id=1')
     setProduks(Array.isArray(d) ? d : [])
     setLoading(false)
   }
@@ -30,7 +30,7 @@ export function LapakWargaPage() {
     e.preventDefault()
     setMsg('')
     try {
-      await api('/api/lapak', {
+      await api('lapak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: 1, ...form, harga: Number(form.harga) }),

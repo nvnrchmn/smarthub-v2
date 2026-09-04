@@ -21,9 +21,9 @@ export function RTDashboard() {
     (async () => {
       try {
         const [rumah, warga, tagihan] = await Promise.all([
-          api('/api/wilayah/rumah?tenant_id=1'),
-          api('/api/warga?tenant_id=1'),
-          api('/api/keuangan/tagihan?tenant_id=1'),
+          api('wilayah/rumah?tenant_id=1'),
+          api('warga?tenant_id=1'),
+          api('keuangan/tagihan?tenant_id=1'),
         ])
         const r = Array.isArray(rumah) ? rumah : []
         const w = Array.isArray(warga) ? warga : []

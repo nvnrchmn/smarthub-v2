@@ -15,7 +15,7 @@ export function RTRumahPage() {
   const [msg, setMsg] = useState('')
 
   const load = async () => {
-    const d = await api('/api/wilayah/rumah?tenant_id=1')
+    const d = await api('wilayah/rumah?tenant_id=1')
     setRumahs(Array.isArray(d) ? d : [])
     setLoading(false)
   }
@@ -28,7 +28,7 @@ export function RTRumahPage() {
     e.preventDefault()
     setMsg('')
     try {
-      await api('/api/wilayah/rumah', {
+      await api('wilayah/rumah', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: 1, ...form }),

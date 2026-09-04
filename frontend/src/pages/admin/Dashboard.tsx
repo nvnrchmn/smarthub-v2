@@ -29,7 +29,7 @@ export function AdminDashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [s, t] = await Promise.all([api('/api/admin/summary'), api('/api/admin/tenants')])
+        const [s, t] = await Promise.all([api('admin/summary'), api('admin/tenants')])
         setSummary(s)
         setTenants(Array.isArray(t) ? t : [])
       } catch {

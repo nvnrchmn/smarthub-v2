@@ -17,7 +17,7 @@ export function RTTagihanPage() {
   const [periode, setPeriode] = useState('2026-10')
 
   const load = async () => {
-    const d = await api('/api/keuangan/tagihan?tenant_id=1')
+    const d = await api('keuangan/tagihan?tenant_id=1')
     setTagihans(Array.isArray(d) ? d : [])
     setLoading(false)
   }
@@ -29,7 +29,7 @@ export function RTTagihanPage() {
   const generate = async () => {
     setMsg('')
     try {
-      const d = await api('/api/keuangan/tagihan/generate', {
+      const d = await api('keuangan/tagihan/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: 1, periode }),
