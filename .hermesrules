@@ -28,5 +28,7 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 - UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA; mode gelap otomatis via prefers-color-scheme (token warna = CSS var di index.css)
 - Komponen UI: pakai `components/ui/bento.tsx` (BentoCard/KPI/ActionTile/Skeleton/EmptyState/ErrorState) & `Icon.tsx` (SVG, JANGAN emoji) — lihat docs/UX-HEURISTICS.md (10 heuristik Nielsen & psikologi UX, e3dc1f5)
 - Register publik = warga + auto-login (token langsung) + profil warga dibuat atomik (tx) — jangan CreateUser terpisah
+- Tema: auto (OS) default; toggle dark/light menyimpan 'sh-theme' (light/dark) di localStorage & set data-theme di <html>; motion pakai class .page-enter/.sheet-panel/bg-shimmer (index.css) — hormati prefers-reduced-motion
+- Endpoint keuangan: POST /tagihan/generate (massal) & /tagihan/generate-rumah {id_rumah,periode} (manual, idempoten, RBAC pengurus) — 7b1fc9c
 - Frontend: helper `api(path)` di src/lib/api.ts SUDAH prepend BASE '/api' — panggil `api('/forum')`, JANGAN `api('/api/forum')` (double-prefix → 404/500, bug 2b19e86)
 - Backup cron VPS: 03:00 → /www/backup/smarthub
