@@ -25,9 +25,14 @@ import { RTDashboard } from './pages/rt/Dashboard'
 import { RTRumahPage } from './pages/rt/RumahPage'
 import { RTWargaPage } from './pages/rt/WargaPage'
 import { RTTagihanPage } from './pages/rt/TagihanPage'
+import { ForumRT } from './pages/rt/ForumRT'
+import { LapakRT } from './pages/rt/LapakRT'
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/Dashboard'
+import { TenantsPage } from './pages/admin/TenantsPage'
+import { UsersPage } from './pages/admin/UsersPage'
+import { SettingsPage } from './pages/admin/SettingsPage'
 
 export default function App() {
   return (
@@ -55,11 +60,16 @@ export default function App() {
           <Route path="/rt/rumah" element={<RTRumahPage />} />
           <Route path="/rt/warga" element={<RTWargaPage />} />
           <Route path="/rt/tagihan" element={<RTTagihanPage />} />
+          <Route path="/rt/forum" element={<ForumRT />} />
+          <Route path="/rt/lapak" element={<LapakRT />} />
         </Route>
 
         {/* Super Admin */}
         <Route element={<ProtectedRoute roles={['super_admin']}><AdminLayout /></ProtectedRoute>}>
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/tenants" element={<TenantsPage />} />
+          <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin/settings" element={<SettingsPage />} />
         </Route>
 
         {/* Fallback */}

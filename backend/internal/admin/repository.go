@@ -62,3 +62,11 @@ func (r *Repository) ListTenants() ([]model.Tenant, error) {
 	}
 	return tenants, nil
 }
+
+func (r *Repository) ListUsers() ([]model.User, error) {
+	var users []model.User
+	if err := r.db.Order("id_user").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
