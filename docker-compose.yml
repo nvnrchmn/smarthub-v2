@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=smarthub
+      - DB_PASSWORD=smarthub_pass
+      - DB_NAME=smarthub_v2
+      - REDIS_ADDR=redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - AES_KEY=${AES_KEY}
+      - PORT=8082
+    depends_on:
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_pass
+      - MYSQL_DATABASE=smarthub_v2
+      - MYSQL_USER=smarthub
+      - MYSQL_PASSWORD=smarthub_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/deployments/mysql:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:
