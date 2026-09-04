@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { setAuth } = useAuth()
   const [form, setForm] = useState({ nomor_wa: '', password: '' })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -19,8 +21,7 @@ export function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login gagal')
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify({ id: data.user_id, role: data.role, tenant_id: data.tenant_id }))
+      setAuth({ id: data.user_id, role: data.role, tenant_id: data.tenant_id }, data.token)
       if (data.role === 'super_admin') navigate('/admin')
       else if (data.role === 'ketua_rt') navigate('/rt')
       else navigate('/app')
