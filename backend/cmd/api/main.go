@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/nvnrchmn/smarthub-v2/config"
+	"github.com/nvnrchmn/smarthub-v2/internal/admin"
 	"github.com/nvnrchmn/smarthub-v2/internal/auth"
 	"github.com/nvnrchmn/smarthub-v2/internal/forum"
 	"github.com/nvnrchmn/smarthub-v2/internal/keuangan"
@@ -90,6 +91,11 @@ func main() {
 	lapakService := lapak.NewService(lapakRepo)
 	lapakHandler := lapak.NewHandler(lapakService)
 	lapakHandler.RegisterRoute(app, mw)
+
+	// Admin (super_admin only)
+	adminRepo := admin.NewRepository(db.SQL)
+	adminHandler := admin.NewHandler(adminRepo)
+	adminHandler.RegisterRoute(app, mw)
 
 	log.Printf("Smarthub v2 listening on :%s", cfg.ServerPort)
 	log.Fatal(app.Listen(":" + cfg.ServerPort))

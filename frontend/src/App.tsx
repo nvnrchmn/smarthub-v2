@@ -16,9 +16,15 @@ import { UnauthorizedPage } from './pages/public/UnauthorizedPage'
 
 // Warga pages
 import { WargaDashboard } from './pages/warga/Dashboard'
+import { TagihanSayaPage } from './pages/warga/TagihanSayaPage'
+import { ForumWargaPage } from './pages/warga/ForumPage'
+import { LapakWargaPage } from './pages/warga/LapakPage'
 
 // RT pages
 import { RTDashboard } from './pages/rt/Dashboard'
+import { RTRumahPage } from './pages/rt/RumahPage'
+import { RTWargaPage } from './pages/rt/WargaPage'
+import { RTTagihanPage } from './pages/rt/TagihanPage'
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/Dashboard'
@@ -38,11 +44,17 @@ export default function App() {
         {/* Warga */}
         <Route element={<ProtectedRoute roles={['warga']}><AppLayout /></ProtectedRoute>}>
           <Route path="/app" element={<WargaDashboard />} />
+          <Route path="/app/tagihan" element={<TagihanSayaPage />} />
+          <Route path="/app/forum" element={<ForumWargaPage />} />
+          <Route path="/app/lapak" element={<LapakWargaPage />} />
         </Route>
 
         {/* Ketua RT */}
         <Route element={<ProtectedRoute roles={['ketua_rt']}><RTLayout /></ProtectedRoute>}>
           <Route path="/rt" element={<RTDashboard />} />
+          <Route path="/rt/rumah" element={<RTRumahPage />} />
+          <Route path="/rt/warga" element={<RTWargaPage />} />
+          <Route path="/rt/tagihan" element={<RTTagihanPage />} />
         </Route>
 
         {/* Super Admin */}

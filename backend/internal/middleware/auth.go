@@ -15,7 +15,9 @@ func NewAuthMiddleware(j *jwt.JWT) *AuthMiddleware {
 	return &AuthMiddleware{j: j}
 }
 
-func (m *AuthMiddleware) AuthRequired(c fiber.Ctx) error {
+// resolve memvalidasi token & mengisi locals. TANPA c.Next() — aman dipanggil
+// dari middleware lain (mencegah double-Next & race di role check).
+func (m *AuthMiddleware) resolve(c fiber.Ctx) error {
 	auth := c.Get("Authorization")
 	if auth == "" {
 		return c.Status(401).JSON(fiber.Map{"error": "token tidak ditemukan"})
@@ -31,15 +33,22 @@ func (m *AuthMiddleware) AuthRequired(c fiber.Ctx) error {
 	c.Locals("user_id", claims.UserID)
 	c.Locals("tenant_id", claims.TenantID)
 	c.Locals("role", claims.Role)
+	return nil
+}
+
+func (m *AuthMiddleware) AuthRequired(c fiber.Ctx) error {
+	if err := m.resolve(c); err != nil {
+		return err
+	}
 	return c.Next()
 }
 
 func (m *AuthMiddleware) RoleRequired(roles ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		if err := m.AuthRequired(c); err != nil {
+		if err := m.resolve(c); err != nil {
 			return err
 		}
-		role := c.Locals("role").(string)
+		role, _ := c.Locals("role").(string)
 		for _, r := range roles {
 			if role == r {
 				return c.Next()
