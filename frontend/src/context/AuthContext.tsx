@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 
 export interface User {
   id: number
@@ -16,18 +16,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+// Baca dari localStorage SECARA SINKRON saat init — mencegah flash redirect ke
+// /login tiap reload (sebelumnya pakai useEffect → render pertama token null →
+// ProtectedRoute pindah ke /login sebelum state sempat dipulihkan).
+function loadUser(): User | null {
+  try {
+    const raw = localStorage.getItem('user')
+    return raw ? (JSON.parse(raw) as User) : null
+  } catch {
+    return null
+  }
+}
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    const savedToken = localStorage.getItem('token')
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser))
-      setToken(savedToken)
-    }
-  }, [])
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(loadUser)
+  const [token, setToken] = useState<string | null>(() => {
+    const t = localStorage.getItem('token')
+    return t && t !== 'null' ? t : null
+  })
 
   const setAuth = (u: User, t: string) => {
     setUser(u)

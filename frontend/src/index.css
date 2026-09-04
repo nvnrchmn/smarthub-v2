@@ -28,7 +28,8 @@
   --sh-border: #E7EBE8;
   --sh-text-1: #1A1F1C;
   --sh-text-2: #64716A;
-  --sh-text-3: #A9B4AE;
+  --sh-text-3: #9AA6A0;
+  --sh-ph: #93A09A;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,7 +39,8 @@
     --sh-border: #26332C;
     --sh-text-1: #EDF2EE;
     --sh-text-2: #9CA9A1;
-    --sh-text-3: #5E6B64;
+    --sh-text-3: #7A8A82;
+    --sh-ph: #8C9C94;
   }
 }
 
@@ -67,6 +69,12 @@ body {
 /* scrollbar tipis */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Placeholder terbaca di mode terang & gelap (heuristic: kontras teks) */
+::placeholder {
+  color: var(--sh-ph);
+  opacity: 1;
+}
 
 /* touch: hilangkan 300ms tap delay */
 button, a { touch-action: manipulation; }
