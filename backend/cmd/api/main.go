@@ -7,7 +7,9 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/nvnrchmn/smarthub-v2/config"
 	"github.com/nvnrchmn/smarthub-v2/internal/auth"
+	"github.com/nvnrchmn/smarthub-v2/internal/forum"
 	"github.com/nvnrchmn/smarthub-v2/internal/keuangan"
+	"github.com/nvnrchmn/smarthub-v2/internal/lapak"
 	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
 	"github.com/nvnrchmn/smarthub-v2/internal/warga"
 	"github.com/nvnrchmn/smarthub-v2/internal/wilayah"
@@ -76,6 +78,18 @@ func main() {
 	keuanganService := keuangan.NewService(keuanganRepo)
 	keuanganHandler := keuangan.NewHandler(keuanganService)
 	keuanganHandler.RegisterRoute(app, mw)
+
+	// Forum
+	forumRepo := forum.NewRepository(db.SQL)
+	forumService := forum.NewService(forumRepo)
+	forumHandler := forum.NewHandler(forumService)
+	forumHandler.RegisterRoute(app, mw)
+
+	// Lapak
+	lapakRepo := lapak.NewRepository(db.SQL)
+	lapakService := lapak.NewService(lapakRepo)
+	lapakHandler := lapak.NewHandler(lapakService)
+	lapakHandler.RegisterRoute(app, mw)
 
 	log.Printf("Smarthub v2 listening on :%s", cfg.ServerPort)
 	log.Fatal(app.Listen(":" + cfg.ServerPort))
