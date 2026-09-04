@@ -15,9 +15,14 @@ export function RTRumahPage() {
   const [msg, setMsg] = useState('')
 
   const load = async () => {
-    const d = await api('wilayah/rumah?tenant_id=1')
-    setRumahs(Array.isArray(d) ? d : [])
-    setLoading(false)
+    try {
+      const d = await api('/wilayah/rumah?tenant_id=1')
+      setRumahs(Array.isArray(d) ? d : [])
+    } catch (e: any) {
+      setMsg(e.message || 'Gagal memuat data rumah')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -28,7 +33,7 @@ export function RTRumahPage() {
     e.preventDefault()
     setMsg('')
     try {
-      await api('wilayah/rumah', {
+      await api('/wilayah/rumah', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant_id: 1, ...form }),

@@ -24,9 +24,14 @@ export function RTWargaPage() {
   })
 
   const load = async () => {
-    const d = await api('warga?tenant_id=1')
-    setWargas(Array.isArray(d) ? d : [])
-    setLoading(false)
+    try {
+      const d = await api('/warga?tenant_id=1')
+      setWargas(Array.isArray(d) ? d : [])
+    } catch (e: any) {
+      setMsg(e.message || 'Gagal memuat data warga')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -37,7 +42,7 @@ export function RTWargaPage() {
     e.preventDefault()
     setMsg('')
     try {
-      await api('warga', {
+      await api('/warga', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
