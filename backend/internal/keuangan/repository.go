@@ -37,6 +37,12 @@ func (r *Repository) CreateTagihanBulk(tagihan *model.TagihanIuran, details []mo
 	})
 }
 
+func (r *Repository) RumahBelongsToTenant(rumahID, tenantID int) bool {
+	var n int64
+	r.db.Table("rumah").Where("id_rumah = ? AND id_tenant = ?", rumahID, tenantID).Count(&n)
+	return n > 0
+}
+
 func (r *Repository) GetTagihanByRumah(rumahID int) ([]model.TagihanIuran, error) {
 	var list []model.TagihanIuran
 	err := r.db.Where("id_rumah = ?", rumahID).Order("periode_bulan_tahun DESC").Find(&list).Error

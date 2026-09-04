@@ -70,6 +70,43 @@ func (s *Service) GetTagihanByRumah(rumahID int) ([]model.TagihanIuran, error) {
 	return s.repo.GetTagihanByRumah(rumahID)
 }
 
+// GenerateTagihanPerRumah membuat tagihan satu rumah untuk periode tertentu
+// (manual oleh pengurus RT). Idempoten: bila sudah ada → error dengan pesan jelas.
+func (s *Service) GenerateTagihanPerRumah(tenantID, rumahID int, periode string) (*model.TagihanIuran, error) {
+	if !s.repo.RumahBelongsToTenant(rumahID, tenantID) {
+		return nil, errors.New("rumah tidak ditemukan di RT ini")
+	}
+	var existing model.TagihanIuran
+	if err := s.repo.db.Where("id_rumah = ? AND periode_bulan_tahun = ?", rumahID, periode).First(&existing).Error; err == nil {
+		return nil, fmt.Errorf("tagihan periode %s untuk rumah ini sudah ada", periode)
+	}
+	var masters []model.MasterIuran
+	if err := s.repo.db.Where("id_tenant = ? AND is_wajib = ?", tenantID, true).Find(&masters).Error; err != nil {
+		return nil, err
+	}
+	if len(masters) == 0 {
+		return nil, errors.New("tidak ada master iuran — atur master dulu")
+	}
+	total := 0.0
+	details := []model.DetailTagihan{}
+	for _, m := range masters {
+		total += m.Nominal
+		details = append(details, model.DetailTagihan{NamaIuran: m.NamaIuran, Nominal: m.Nominal})
+	}
+	tagihan := &model.TagihanIuran{
+		TenantID:     tenantID,
+		RumahID:      rumahID,
+		Periode:      periode,
+		TotalNominal: total,
+		StatusBayar:  "PENDING",
+		CreatedAt:    time.Now(),
+	}
+	if err := s.repo.CreateTagihanBulk(tagihan, details); err != nil {
+		return nil, err
+	}
+	return tagihan, nil
+}
+
 func (s *Service) GetTagihanByTenant(tenantID int, status string) ([]model.TagihanIuran, error) {
 	return s.repo.GetTagihanByTenant(tenantID, status)
 }

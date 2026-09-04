@@ -193,7 +193,7 @@ export function Avatar({ name, className }: { name: string | null | undefined; c
 /* ------------------------------------------------------------------ */
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-xl bg-text-disabled/15', className)} />
+  return <div className={cn('bg-shimmer rounded-xl', className)} />
 }
 
 export function EmptyState({ icon = 'file', title, desc, action }: { icon?: IconName; title: string; desc?: string; action?: ReactNode }) {

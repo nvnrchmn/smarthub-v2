@@ -29,6 +29,7 @@ func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware)
 	// Generate tagihan hanya untuk pengurus RT / super admin
 	g := app.Group("/keuangan", mw.RoleRequired("ketua_rt", "super_admin"))
 	g.Post("/tagihan/generate", h.GenerateTagihan)
+	g.Post("/tagihan/generate-rumah", h.GenerateTagihanRumah)
 }
 
 func (h *Handler) BayarTagihan(c fiber.Ctx) error {
@@ -89,6 +90,26 @@ func (h *Handler) GenerateTagihan(c fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"message": fmt.Sprintf("%d tagihan di-generate", created)})
+}
+
+type generateRumahReq struct {
+	RumahID int    `json:"id_rumah"`
+	Periode string `json:"periode"`
+}
+
+func (h *Handler) GenerateTagihanRumah(c fiber.Ctx) error {
+	var req generateRumahReq
+	if err := c.Bind().JSON(&req); err != nil || req.RumahID <= 0 {
+		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
+	}
+	if req.Periode == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "periode wajib diisi"})
+	}
+	tagihan, err := h.service.GenerateTagihanPerRumah(c.Locals("tenant_id").(int), req.RumahID, req.Periode)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(tagihan)
 }
 
 func (h *Handler) WebhookXendit(c fiber.Ctx) error {
