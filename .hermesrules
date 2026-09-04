@@ -1,6 +1,6 @@
 # Smarthub v2 — Project Context
 
-## Status (2026-09-04)
+## Status (2026-09-05)
 Fase 0-7 + UI/UX layer restructure SELESAI. Live: https://smarthub.logikraf.id
 Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), port 8082.
 
@@ -13,9 +13,12 @@ Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), po
 ## Arsitektur
 - Multi-tenancy: roles `super_admin` (panel /admin), `ketua_rt` (panel /rt), `warga` (app mobile /app), Public (/)
 - Clean architecture per modul: internal/{auth,wilayah,warga,keuangan,forum,lapak,admin}/{repository,service,handler}.go
-- Model GORM wajib `TableName()` eksplisit (tabel non-plural: rumah, warga)
+- Model GORM wajib `TableName()` eksplisit (tabel non-plural: rumah, warga) — DetailTagihan sudah punya
 - Route API TANPA prefix /api di router Fiber (nginx yang strip); `/admin/*` khusus super_admin
-- Middleware auth.go: `resolve()` validasi token + set locals (TANPA c.Next()) — dipakai AuthRequired & RoleRequired. JANGAN panggil AuthRequired dari middleware lain (double-Next → panic)
+- Middleware auth.go: `resolve()` validasi token + set locals (TANPA c.Next()) — dipakai AuthRequired & RoleRequired. JANGAN panggil AuthRequired dari middleware lain (double-Next → panic). resolve mengembalikan error sentinel; 401 ditulis oleh AuthRequired/RoleRequired (jangan `return c.Status(401).JSON(...)` di resolve — nil-err → auth bypass, bug f6c66ee)
+- RBAC (audit f6c66ee): mutasi warga/wilayah/rumah + generate tagihan → `RoleRequired("ketua_rt","super_admin")`; GET semua role ter-auth; DELETE lapak hanya pemilik/ketua/super; register publik = role warga saja
+- Tenant scope: SELALU dari JWT `c.Locals("tenant_id")` — jangan pernah percaya `?tenant_id=` query atau body (cross-tenant leak, ditutup di f6c66ee)
+- DB: skema via deployments/mysql/*.sql (DDL+seed), BUKAN AutoMigrate (dulu Error 3780 int/bigint tiap boot)
 - DB: 10 tabel inti + forum_threads/forum_komentar/lapak_warga; seed 2 tenant, 6 user
 
 ## Docs acuan (baca dulu sebelum kerja)
@@ -23,5 +26,5 @@ docs/{PRD,Architecture,Design,DDL,task}.md di root repo
 
 ## Konvensi
 - UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA
-- Frontend fetch via /api/... (helper src/lib/api.ts); role guard ProtectedRoute per layer
+- Frontend: helper `api(path)` di src/lib/api.ts SUDAH prepend BASE '/api' — panggil `api('/forum')`, JANGAN `api('/api/forum')` (double-prefix → 404/500, bug 2b19e86)
 - Backup cron VPS: 03:00 → /www/backup/smarthub
