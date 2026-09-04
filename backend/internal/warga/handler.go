@@ -78,9 +78,14 @@ func (h *Handler) CreateWarga(c fiber.Ctx) error {
 		v := req.IDUser
 		idUser = &v
 	}
+	var rumahID *int
+	if req.RumahID > 0 {
+		v := req.RumahID
+		rumahID = &v
+	}
 	warga := &model.Warga{
 		TenantID:       tenantID,
-		RumahID:        req.RumahID,
+		RumahID:        rumahID,
 		IDUser:         idUser,
 		NamaLengkap:    req.NamaLengkap,
 		NIK:            req.NIK,

@@ -34,9 +34,15 @@ func (h *Handler) Register(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
-	user, err := h.service.Register(req)
+	res, err := h.service.Register(req)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(fiber.Map{"message": "registrasi berhasil", "user_id": user.ID})
+	return c.JSON(fiber.Map{
+		"message":   "registrasi berhasil",
+		"token":     res.Token,
+		"user_id":   res.UserID,
+		"role":      res.Role,
+		"tenant_id": res.TenantID,
+	})
 }

@@ -39,3 +39,24 @@ func (r *Repository) TenantExists(tenantID int) bool {
 func (r *Repository) CreateUser(user *model.User) error {
 	return r.db.Create(user).Error
 }
+
+func (r *Repository) CreateWargaProfile(w *model.Warga) error {
+	return r.db.Create(w).Error
+}
+
+// RegisterUserWithProfile membuat user + profil warga secara atomik —
+// jika salah satu gagal, semuanya di-rollback (hindari user yatim).
+func (r *Repository) RegisterUserWithProfile(user *model.User, warga *model.Warga) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(user).Error; err != nil {
+			return err
+		}
+		// kaitkan profil warga ke user yang barusan dibuat
+		idUser := user.ID
+		warga.IDUser = &idUser
+		if err := tx.Create(warga).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}

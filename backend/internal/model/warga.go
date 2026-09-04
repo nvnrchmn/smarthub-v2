@@ -5,7 +5,7 @@ import "time"
 type Warga struct {
 	ID             int       `gorm:"column:id_warga;primaryKey;autoIncrement" json:"id_warga"`
 	TenantID       int       `gorm:"column:id_tenant" json:"id_tenant"`
-	RumahID        int       `gorm:"column:id_rumah" json:"id_rumah"`
+	RumahID        *int      `gorm:"column:id_rumah" json:"id_rumah"`
 	IDUser         *int      `gorm:"column:id_user" json:"id_user"`
 	NamaLengkap    string    `gorm:"column:nama_lengkap;size:155;not null" json:"nama_lengkap"`
 	NIK            string    `gorm:"column:nik;size:20" json:"nik"`

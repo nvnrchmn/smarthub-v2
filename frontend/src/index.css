@@ -1,15 +1,18 @@
 @import "tailwindcss";
 @import "@fontsource-variable/plus-jakarta-sans";
 
+/* Warna semantik dikontrol via CSS variable → mode gelap otomatis mengikuti
+   preferensi OS (prefers-color-scheme) tanpa JS. */
 @theme {
   --color-primary: #1B6B4A;
   --color-primary-50: #EBF5F0;
   --color-primary-100: #C3E2D4;
-  --color-surface: #F7F8F6;
-  --color-surface-card: #FFFFFF;
-  --color-text-primary: #1A1F1C;
-  --color-text-secondary: #6B7770;
-  --color-text-disabled: #B0BAB6;
+  --color-surface: var(--sh-surface);
+  --color-surface-card: var(--sh-card);
+  --color-border: var(--sh-border);
+  --color-text-primary: var(--sh-text-1);
+  --color-text-secondary: var(--sh-text-2);
+  --color-text-disabled: var(--sh-text-3);
   --color-status-paid: #22C55E;
   --color-status-pending: #F59E0B;
   --color-status-overdue: #EF4444;
@@ -17,6 +20,26 @@
   --color-danger: #DC2626;
   --color-warning: #D97706;
   --font-family-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+:root {
+  --sh-surface: #F7F8F6;
+  --sh-card: #FFFFFF;
+  --sh-border: #E7EBE8;
+  --sh-text-1: #1A1F1C;
+  --sh-text-2: #64716A;
+  --sh-text-3: #A9B4AE;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sh-surface: #0E1411;
+    --sh-card: #17201B;
+    --sh-border: #26332C;
+    --sh-text-1: #EDF2EE;
+    --sh-text-2: #9CA9A1;
+    --sh-text-3: #5E6B64;
+  }
 }
 
 html {
@@ -31,9 +54,28 @@ body {
   min-height: 100dvh;
 }
 
+/* Heuristik 4: visibilitas fokus keyboard (aksesibilitas) */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
 /* scrollbar tipis */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* touch: hilangkan 300ms tap delay */
 button, a { touch-action: manipulation; }
+
+/* motion: hormati prefers-reduced-motion (psikologi: kenyamanan pengguna) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

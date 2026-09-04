@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/nvnrchmn/smarthub-v2/internal/model"
 	"github.com/nvnrchmn/smarthub-v2/pkg/encryption"
@@ -60,18 +61,22 @@ func (s *Service) Login(input LoginInput) (*LoginResponse, error) {
 }
 
 type RegisterInput struct {
-	NomorWA  string `json:"nomor_wa"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
-	TenantID int    `json:"tenant_id"`
+	NomorWA     string `json:"nomor_wa"`
+	Password    string `json:"password"`
+	Role        string `json:"role"`
+	TenantID    int    `json:"tenant_id"`
+	NamaLengkap string `json:"nama_lengkap"`
 }
 
-func (s *Service) Register(input RegisterInput) (*model.User, error) {
+func (s *Service) Register(input RegisterInput) (*LoginResponse, error) {
 	if matched, _ := regexp.MatchString(`^08\d{8,13}$`, input.NomorWA); !matched {
 		return nil, errors.New("format nomor WA tidak valid (harus 08xxxxxxxxxx)")
 	}
 	if len(input.Password) < 6 {
 		return nil, errors.New("password minimal 6 karakter")
+	}
+	if strings.TrimSpace(input.NamaLengkap) == "" {
+		return nil, errors.New("nama lengkap wajib diisi")
 	}
 	// Registrasi publik HANYA untuk warga — cegah self-register jadi super_admin/ketua_rt
 	if input.Role != "" && input.Role != "warga" {
@@ -94,8 +99,23 @@ func (s *Service) Register(input RegisterInput) (*model.User, error) {
 		Role:         "warga",
 		TenantID:     input.TenantID,
 	}
-	if err := s.repo.CreateUser(user); err != nil {
+	// User + profil warga dibuat atomik (rollback jika salah satu gagal)
+	wargaProfile := &model.Warga{
+		TenantID:    user.TenantID,
+		NamaLengkap: strings.TrimSpace(input.NamaLengkap),
+	}
+	if err := s.repo.RegisterUserWithProfile(user, wargaProfile); err != nil {
 		return nil, err
 	}
-	return user, nil
+	// Auto-login: langsung terbitkan token agar pendaftar tidak perlu login ulang
+	token, err := s.jwt.Generate(user.ID, user.TenantID, user.Role)
+	if err != nil {
+		return nil, err
+	}
+	return &LoginResponse{
+		Token:    token,
+		Role:     user.Role,
+		TenantID: user.TenantID,
+		UserID:   user.ID,
+	}, nil
 }

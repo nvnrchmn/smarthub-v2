@@ -1,97 +1,116 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { fmt } from '../../lib/utils'
+import { ActionTile, Avatar, BentoCard, ErrorState, KPI, Progress, SectionHead, Skeleton } from '../../components/ui/bento'
 
 interface Summary {
-  total_tenants: number
-  total_users: number
-  total_rumah: number
-  total_warga: number
-  total_tagihan: number
-  total_lunas: number
-  total_belum_bayar: number
-  total_nominal: number
+  total_tenants: number; total_users: number; total_rumah: number; total_warga: number
+  total_tagihan: number; total_lunas: number; total_belum_bayar: number; total_nominal: number
 }
-
 interface Tenant {
-  id_tenant: number
-  nama_rt_rw: string
-  desa_kelurahan: string
-  kecamatan: string
-  status_berlangganan: string
+  ID: number; NamaRTRW: string; DesaKelurahan: string; Kecamatan: string
+  KabupatenKota: string; Provinsi: string; StatusBerlanggan: string; XenditKYCStatus: string
 }
 
 export function AdminDashboard() {
-  const [summary, setSummary] = useState<Summary | null>(null)
+  const [s, setS] = useState<Summary | null>(null)
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [s, t] = await Promise.all([api('admin/summary'), api('admin/tenants')])
-        setSummary(s)
-        setTenants(Array.isArray(t) ? t : [])
-      } catch {
-        // biarkan null
-      } finally {
-        setLoading(false)
-      }
-    })()
+  const load = useCallback(() => {
+    setLoading(true)
+    setError('')
+    Promise.all([api<Summary>('/admin/summary'), api<Tenant[]>('/admin/tenants')])
+      .then(([sum, tns]) => {
+        setS(sum)
+        setTenants(tns)
+      })
+      .catch((e: any) => setError(e.message || 'Terjadi kesalahan'))
+      .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="p-6 text-sm text-text-secondary">Memuat…</div>
+  useEffect(load, [load])
 
-  const cards = [
-    { label: 'Tenants', value: summary?.total_tenants ?? 0, sub: `${summary?.total_users ?? 0} pengguna` },
-    { label: 'Rumah', value: summary?.total_rumah ?? 0, sub: `${summary?.total_warga ?? 0} warga` },
-    { label: 'Tagihan', value: summary?.total_tagihan ?? 0, sub: `${summary?.total_lunas ?? 0} lunas` },
-    { label: 'Belum Bayar', value: fmt(summary?.total_nominal ?? 0), sub: `${summary?.total_belum_bayar ?? 0} tagihan` },
-  ]
+  const lunasPct = s && s.total_tagihan ? (s.total_lunas / s.total_tagihan) * 100 : 0
+  const aktif = tenants.filter((t) => t.StatusBerlanggan === 'AKTIF').length
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pt-6 pb-16">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Dashboard Super Admin</h1>
-        <p className="text-sm text-text-secondary">Overview seluruh tenant Logikraf</p>
+    <div className="mx-auto max-w-6xl">
+      <header className="mb-4">
+        <h1 className="text-xl font-bold text-text-primary">Ringkasan Platform</h1>
+        <p className="text-xs text-text-secondary">Pantau seluruh RT, warga, dan arus iuran dalam satu layar</p>
       </header>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {cards.map((c) => (
-          <div key={c.label} className="rounded-2xl border border-border bg-surface-card p-4">
-            <p className="text-xs text-text-secondary">{c.label}</p>
-            <p className="mt-1 text-xl font-bold text-text-primary">{c.value}</p>
-            <p className="text-xs text-text-secondary">{c.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tenants */}
-      <section className="mt-6">
-        <h2 className="mb-3 text-base font-semibold text-text-primary">Daftar Tenant</h2>
-        <div className="space-y-2.5">
-          {tenants.map((t) => (
-            <div key={t.id_tenant} className="flex items-center justify-between rounded-xl border border-border bg-surface-card p-4">
-              <div>
-                <p className="font-semibold text-text-primary">
-                  {t.nama_rt_rw} <span className="text-xs text-text-secondary">#{t.id_tenant}</span>
-                </p>
-                <p className="text-xs text-text-secondary">
-                  {t.desa_kelurahan}, {t.kecamatan}
-                </p>
-              </div>
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                  t.status_berlangganan === 'AKTIF' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {t.status_berlangganan}
-              </span>
-            </div>
-          ))}
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Skeleton className="col-span-2 h-36" />
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+          <Skeleton className="col-span-2 h-28" />
+          <Skeleton className="col-span-2 h-28" />
         </div>
-      </section>
+      ) : error || !s ? (
+        <ErrorState message={error || 'Data tidak tersedia'} onRetry={load} />
+      ) : (
+        <>
+          {/* KPI bento */}
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <KPI icon="wallet" label="Total iuran beredar" value={fmt(s.total_nominal)} sub={`${s.total_lunas} lunas · ${s.total_belum_bayar} menunggu`} tone="primary" className="col-span-2" />
+            <KPI icon="building" label="RT terdaftar" value={s.total_tenants} sub={`${aktif} berlangganan aktif`} />
+            <KPI icon="shield" label="Pengguna" value={s.total_users} sub="Semua role" />
+
+            <KPI icon="users" label="Warga" value={s.total_warga} sub={`di ${s.total_rumah} rumah`} />
+            <BentoCard className="col-span-2" innerClassName="gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-text-secondary">Rasio iuran lunas (semua periode)</p>
+                <span className="text-lg font-extrabold text-text-primary">{Math.round(lunasPct)}%</span>
+              </div>
+              <Progress value={lunasPct} tone={lunasPct >= 70 ? 'success' : 'warning'} />
+              <p className="text-xs text-text-secondary">{s.total_lunas} dari {s.total_tagihan} tagihan lunas.</p>
+            </BentoCard>
+            <KPI icon="file" label="Total tagihan" value={s.total_tagihan} sub="Diproses sistem" />
+          </section>
+
+          {/* Aksi cepat */}
+          <section className="mt-6">
+            <SectionHead title="Menu admin" desc="Kelola tenant & pengguna" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <ActionTile to="/admin/tenants" icon="building" title="Tenant" desc={`${tenants.length} RT terdaftar`} />
+              <ActionTile to="/admin/users" icon="users" title="Pengguna" desc={`${s.total_users} akun seluruh role`} accent="neutral" />
+              <ActionTile to="/admin/settings" icon="settings" title="Pengaturan" desc="Konfigurasi platform" accent="neutral" />
+            </div>
+          </section>
+
+          {/* Daftar tenant */}
+          <section className="mt-6">
+            <SectionHead title="RT terdaftar" desc="Status berlangganan & wilayah" to="/admin/tenants" />
+            {tenants.length === 0 ? (
+              <BentoCard innerClassName="items-center justify-center py-10 text-center text-sm text-text-secondary">Belum ada tenant terdaftar.</BentoCard>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {tenants.map((t) => (
+                  <BentoCard key={t.ID} innerClassName="gap-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={t.NamaRTRW} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-text-primary">{t.NamaRTRW}</p>
+                        <p className="truncate text-xs text-text-secondary">{t.DesaKelurahan}, {t.Kecamatan}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${t.StatusBerlanggan === 'AKTIF' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                        {t.StatusBerlanggan}
+                      </span>
+                    </div>
+                    <p className="border-t border-border pt-2 text-xs text-text-secondary">
+                      {t.KabupatenKota}, {t.Provinsi}
+                    </p>
+                  </BentoCard>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </div>
   )
 }

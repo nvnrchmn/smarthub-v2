@@ -1,22 +1,17 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { Icon, type IconName } from './Icon'
 
-interface NavItem {
-  path: string
-  label: string
-  icon: string
-}
-
-const navItems: NavItem[] = [
-  { path: '/app', label: 'Beranda', icon: '🏠' },
-  { path: '/app/tagihan', label: 'Tagihan', icon: '📋' },
-  { path: '/app/forum', label: 'Forum', icon: '💬' },
-  { path: '/app/lapak', label: 'Lapak', icon: '🛍️' },
+const navItems: { path: string; label: string; icon: IconName }[] = [
+  { path: '/app', label: 'Beranda', icon: 'home' },
+  { path: '/app/tagihan', label: 'Tagihan', icon: 'file' },
+  { path: '/app/forum', label: 'Forum', icon: 'chat' },
+  { path: '/app/lapak', label: 'Lapak', icon: 'store' },
 ]
 
 export function BottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-primary-100 bg-surface-card pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface-card pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-lg items-stretch justify-around">
         {navItems.map((item) => (
           <NavLink
@@ -24,14 +19,14 @@ export function BottomNav() {
             to={item.path}
             className={({ isActive }) =>
               cn(
-                'flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] transition-colors',
-                isActive ? 'text-primary font-medium' : 'text-text-secondary'
+                'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] transition-colors',
+                isActive ? 'font-semibold text-primary' : 'text-text-secondary'
               )
             }
           >
             {({ isActive }) => (
               <>
-                <span className={cn('text-lg leading-none', isActive && 'scale-110')}>{item.icon}</span>
+                <Icon name={item.icon} size={20} strokeWidth={isActive ? 2.4 : 2} />
                 <span>{item.label}</span>
               </>
             )}
