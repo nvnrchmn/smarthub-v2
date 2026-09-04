@@ -22,23 +22,17 @@ func main() {
 	j := jwt.NewJWT()
 	enc := encryption.NewAES()
 
-	// Auth
 	authRepo := auth.NewRepository(db.SQL)
 	authService := auth.NewService(authRepo, j, enc)
 	authHandler := auth.NewHandler(authService)
 
-	// Wilayah
 	wilayahRepo := wilayah.NewRepository(db.SQL)
 	wilayahService := wilayah.NewService(wilayahRepo)
 	wilayahHandler := wilayah.NewHandler(wilayahService)
 
-	// Warga
 	wargaRepo := warga.NewRepository(db.SQL)
 	wargaService := warga.NewService(wargaRepo)
 	wargaHandler := warga.NewHandler(wargaService)
-
-	// Middleware
-	mw := middleware.NewAuthMiddleware(j)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
@@ -47,23 +41,22 @@ func main() {
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 	}))
 
 	app.Get("/healthz", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok", "db": "connected"})
 	})
 
-	api := app.Group("/api")
-
 	// Public routes
-	api.Post("/auth/login", authHandler.Login)
-	api.Post("/auth/register", authHandler.Register)
+	app.Post("/auth/login", authHandler.Login)
+	app.Post("/auth/register", authHandler.Register)
 
 	// Protected routes
-	api.Get("/me", mw.AuthRequired, func(c fiber.Ctx) error {
+	mw := middleware.NewAuthMiddleware(j)
+	app.Get("/me", mw.AuthRequired, func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"user_id":   c.Locals("user_id"),
 			"tenant_id": c.Locals("tenant_id"),
@@ -72,10 +65,10 @@ func main() {
 	})
 
 	// Wilayah
-	wilayahHandler.RegisterRoute(api, mw)
+	wilayahHandler.RegisterRoute(app, mw)
 
 	// Warga
-	wargaHandler.RegisterRoute(api, mw)
+	wargaHandler.RegisterRoute(app, mw)
 
 	log.Printf("Smarthub v2 listening on :%s", cfg.ServerPort)
 	log.Fatal(app.Listen(":" + cfg.ServerPort))
