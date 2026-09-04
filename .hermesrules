@@ -22,7 +22,7 @@ Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), po
 - DB: 10 tabel inti + forum_threads/forum_komentar/lapak_warga; seed 2 tenant, 6 user
 
 ## Docs acuan (baca dulu sebelum kerja)
-docs/{PRD,Architecture,Design,DDL,task}.md di root repo
+docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di root repo
 
 ## Konvensi
 - UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA; mode gelap otomatis via prefers-color-scheme (token warna = CSS var di index.css)

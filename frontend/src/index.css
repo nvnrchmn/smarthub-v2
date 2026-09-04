@@ -17,6 +17,10 @@
   --color-status-pending: #F59E0B;
   --color-status-overdue: #EF4444;
   --color-status-empty: #94A3B8;
+  --color-status-paid-bg: #DCFCE7;
+  --color-status-pending-bg: #FEF3C7;
+  --color-status-overdue-bg: #FEE2E2;
+  --color-status-empty-bg: #F1F5F9;
   --color-danger: #DC2626;
   --color-warning: #D97706;
   --font-family-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, sans-serif;

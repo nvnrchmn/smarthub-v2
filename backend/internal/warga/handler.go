@@ -70,6 +70,13 @@ func (h *Handler) CreateWarga(c fiber.Ctx) error {
 	if req.NamaLengkap == "" {
 		return c.Status(400).JSON(fiber.Map{"error": "nama lengkap wajib diisi"})
 	}
+	// Default sesuai enum DB bila tidak dikirim
+	if req.StatusHubungan == "" {
+		req.StatusHubungan = "Lainnya"
+	}
+	if req.StatusWarga == "" {
+		req.StatusWarga = "Aktif"
+	}
 	if req.RumahID > 0 && !h.service.RumahExists(req.RumahID, tenantID) {
 		return c.Status(400).JSON(fiber.Map{"error": "rumah tidak ditemukan di RT ini"})
 	}

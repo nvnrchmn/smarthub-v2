@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
+import { EmptyState, Skeleton } from '../../components/ui/bento'
 
 interface UserRow {
   id_user: number
@@ -32,10 +33,14 @@ export function UsersPage() {
         <h1 className="text-xl font-bold text-text-primary">Users</h1>
         <p className="text-xs text-text-secondary">Semua akun pengguna</p>
       </header>
-      {loading && <p className="text-sm text-text-secondary">Memuat…</p>}
-      <div className="overflow-hidden rounded-2xl border border-border bg-white">
+      {loading && <div className="space-y-2.5"><Skeleton className="h-16" /><Skeleton className="h-16" /></div>}
+      {!loading && users.length === 0 && (
+        <EmptyState icon="users" title="Belum ada pengguna" desc="Akun pengguna akan tampil di sini." />
+      )}
+      {!loading && users.length > 0 && (
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface-card">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left text-xs text-text-secondary">
+          <thead className="bg-text-disabled/10 text-left text-xs text-text-secondary">
             <tr>
               <th className="px-4 py-2">ID</th>
               <th className="px-4 py-2">Nomor WA</th>
@@ -57,6 +62,7 @@ export function UsersPage() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   )
 }

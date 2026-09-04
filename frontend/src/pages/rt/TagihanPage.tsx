@@ -14,7 +14,7 @@ export function RTTagihanPage() {
   const [tagihans, setTagihans] = useState<Tagihan[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState('')
-  const [periode, setPeriode] = useState('2026-10')
+  const [periode, setPeriode] = useState(new Date().toISOString().slice(0, 7))
 
   const load = async () => {
     try {

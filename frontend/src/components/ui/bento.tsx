@@ -159,15 +159,30 @@ export function Progress({ value, tone = 'primary', className }: { value: number
   )
 }
 
-export function Avatar({ name, className }: { name: string; className?: string }) {
-  const initials = name
+const avatarTones = [
+  'bg-emerald-100 text-emerald-800',
+  'bg-teal-100 text-teal-800',
+  'bg-sky-100 text-sky-800',
+  'bg-indigo-100 text-indigo-800',
+  'bg-violet-100 text-violet-800',
+  'bg-amber-100 text-amber-800',
+  'bg-rose-100 text-rose-800',
+  'bg-cyan-100 text-cyan-800',
+]
+
+export function Avatar({ name, className }: { name: string | null | undefined; className?: string }) {
+  const clean = (name || '').trim()
+  let hash = 0
+  for (let i = 0; i < clean.length; i++) hash = (hash * 31 + clean.charCodeAt(i)) >>> 0
+  const tone = avatarTones[hash % avatarTones.length]
+  const initials = clean
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join('')
   return (
-    <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-50 text-sm font-bold text-primary', className)} aria-hidden="true">
+    <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold', tone, className)} aria-hidden="true">
       {initials || '?'}
     </span>
   )

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
+import { EmptyState, Skeleton } from '../../components/ui/bento'
+import { Icon } from '../../components/ui/Icon'
+import { useAuth } from '../../context/AuthContext'
 
 interface Thread {
   id_thread: number
@@ -10,15 +13,22 @@ interface Thread {
 }
 
 export function ForumWargaPage() {
+  const { user } = useAuth()
+  const canAnnounce = user?.role === 'ketua_rt' || user?.role === 'super_admin'
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
-  const [msg, setMsg] = useState('')
+  const [notice, setNotice] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [form, setForm] = useState({ tipe_thread: 'Diskusi', judul: '', konten: '' })
 
   const load = async () => {
-    const d = await api('/forum?tenant_id=1')
-    setThreads(Array.isArray(d) ? d : [])
-    setLoading(false)
+    try {
+      const d = await api('/forum')
+      setThreads(Array.isArray(d) ? d : [])
+    } catch (e: any) {
+      setNotice({ type: 'err', text: e.message || 'Gagal memuat forum' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -27,18 +37,17 @@ export function ForumWargaPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setMsg('')
+    setNotice(null)
     try {
       await api('/forum', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: 1, ...form }),
+        body: JSON.stringify(form),
       })
       setForm({ tipe_thread: 'Diskusi', judul: '', konten: '' })
-      setMsg('Thread berhasil diposting ✅')
+      setNotice({ type: 'ok', text: 'Thread berhasil diposting.' })
       load()
-    } catch {
-      setMsg('Gagal memposting thread')
+    } catch (err: any) {
+      setNotice({ type: 'err', text: err.message || 'Gagal memposting thread' })
     }
   }
 
@@ -58,48 +67,66 @@ export function ForumWargaPage() {
           <select
             value={form.tipe_thread}
             onChange={(e) => setForm({ ...form, tipe_thread: e.target.value })}
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+            aria-label="Jenis thread"
+            className="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option value="Diskusi">Diskusi</option>
-            <option value="Pengumuman">Pengumuman</option>
+            {canAnnounce && <option value="Pengumuman">Pengumuman</option>}
           </select>
           <input
             placeholder="Judul"
             required
+            autoComplete="off"
             value={form.judul}
             onChange={(e) => setForm({ ...form, judul: e.target.value })}
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <textarea
             placeholder="Isi konten…"
             required
-            rows={2}
+            rows={3}
             value={form.konten}
             onChange={(e) => setForm({ ...form, konten: e.target.value })}
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-xl border border-border bg-surface-card px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
-          <button type="submit" className="w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-white min-h-[44px]">
+          <button type="submit" className="flex h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-base font-semibold text-white hover:bg-primary/90">
             Posting
           </button>
-          {msg && <p className="text-sm text-green-700" role="alert">{msg}</p>}
+          {notice && (
+            <p role="status" className={`rounded-lg px-3 py-2 text-sm ${notice.type === 'ok' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-700'}`}>
+              {notice.text}
+            </p>
+          )}
         </div>
       </form>
 
       {/* List thread */}
       <div className="space-y-3">
-        {loading && <p className="text-sm text-text-secondary">Memuat…</p>}
-        {threads.map((t) => (
-          <div
-            key={t.id_thread}
-            className={`rounded-xl p-4 ${t.tipe_thread === 'Pengumuman' ? 'bg-primary-50' : 'bg-surface-card border border-border'}`}
-          >
-            <p className="font-medium text-text-primary">{t.judul}</p>
-            <p className="mt-1 text-sm text-text-secondary">{t.konten}</p>
-            <p className="mt-2 text-xs text-text-secondary">
-              {t.tipe_thread} • {tgl(t.created_at)}
-            </p>
-          </div>
-        ))}
+        {loading && <div className="space-y-2.5"><Skeleton className="h-24" /><Skeleton className="h-24" /></div>}
+        {!loading && threads.length === 0 && (
+          <EmptyState icon="chat" title="Belum ada thread" desc="Mulai diskusi pertama di lingkungan RT." />
+        )}
+        {threads.map((t) => {
+          const ann = t.tipe_thread === 'Pengumuman'
+          return (
+            <div
+              key={t.id_thread}
+              className={`rounded-xl p-4 ${ann ? 'border border-primary-100 bg-primary-50' : 'border border-border bg-surface-card'}`}
+            >
+              {ann && (
+                <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-white">
+                  <Icon name="megaphone" size={12} aria-hidden />
+                  Pengumuman
+                </span>
+              )}
+              <p className="font-medium text-text-primary">{t.judul}</p>
+              <p className="mt-1 text-sm text-text-secondary whitespace-pre-line">{t.konten}</p>
+              <p className="mt-2 text-xs text-text-secondary">
+                {ann ? 'Pengurus RT' : 'Diskusi warga'} • {tgl(t.created_at)}
+              </p>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

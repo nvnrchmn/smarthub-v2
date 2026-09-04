@@ -1,4 +1,8 @@
 # Design Brief: SmartHub V2
+
+> ⚠️ ARSIP (2026-09-05) — acuan aktif kini `DESIGN-SYSTEM.md` (token, komponen,
+> aturan v2) + `UX-HEURISTICS.md`. Brief ini tetap berguna untuk konteks persona,
+> alasan keputusan, dan "yang sengaja tidak dimasukkan".
 *Catatan internal untuk tim — bukan dokumen final klien*
 
 ---
