@@ -42,8 +42,8 @@ export function GabungRTPage() {
       return
     }
 
-    if (form.password.length < 6) {
-      setError('Password minimal 6 karakter')
+    if (form.password.length < 8) {
+      setError('Password minimal 8 karakter')
       setLoading(false)
       return
     }
@@ -172,7 +172,7 @@ export function GabungRTPage() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Minimal 6 karakter"
+                placeholder="Minimal 8 karakter"
                 className="h-12 w-full rounded-xl border border-border bg-surface px-4 text-text-primary placeholder:text-text-secondary/50 transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>

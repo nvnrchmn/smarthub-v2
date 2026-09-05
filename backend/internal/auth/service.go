@@ -70,8 +70,8 @@ func (s *Service) Login(input LoginInput) (*LoginResponse, error) {
 	if matched, _ := regexp.MatchString(`^08\d{8,13}$`, input.NomorWA); !matched {
 		return nil, errors.New("nomor WA tidak valid")
 	}
-	if len(input.Password) < 6 {
-		return nil, errors.New("password minimal 6 karakter")
+	if len(input.Password) < 8 {
+		return nil, errors.New("password minimal 8 karakter")
 	}
 
 	user, err := s.repo.GetUserByNomorWA(input.NomorWA)
@@ -128,8 +128,8 @@ func (s *Service) RegisterPengurus(input RegisterPengurusInput) (*LoginResponse,
 	if matched, _ := regexp.MatchString(`^08\d{8,13}$`, input.NomorWA); !matched {
 		return nil, errors.New("nomor WA tidak valid")
 	}
-	if len(input.Password) < 6 {
-		return nil, errors.New("password minimal 6 karakter")
+	if len(input.Password) < 8 {
+		return nil, errors.New("password minimal 8 karakter")
 	}
 	if input.NamaRT == "" {
 		return nil, errors.New("nama RT/RW wajib diisi")
@@ -143,7 +143,7 @@ func (s *Service) RegisterPengurus(input RegisterPengurusInput) (*LoginResponse,
 		return nil, errors.New("nomor WA sudah terdaftar")
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), 12) // cost 12 (audit 2026-09-05; lama 10)
 	if err != nil {
 		return nil, err
 	}
@@ -196,8 +196,8 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 	if matched, _ := regexp.MatchString(`^08\d{8,13}$`, input.NomorWA); !matched {
 		return nil, errors.New("nomor WA tidak valid")
 	}
-	if len(input.Password) < 6 {
-		return nil, errors.New("password minimal 6 karakter")
+	if len(input.Password) < 8 {
+		return nil, errors.New("password minimal 8 karakter")
 	}
 
 	existing, err := s.repo.GetUserByNomorWA(input.NomorWA)
@@ -208,7 +208,7 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		return nil, errors.New("nomor WA sudah terdaftar")
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), 12) // cost 12 (audit 2026-09-05; lama 10)
 	if err != nil {
 		return nil, err
 	}

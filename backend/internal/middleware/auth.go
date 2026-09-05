@@ -67,15 +67,19 @@ func (m *AuthMiddleware) resolve(c fiber.Ctx) error {
 	var u struct {
 		Role       string
 		UserStatus string
+		TenantID   int
 	}
-	if err := m.db.Table("users").Select("role, user_status").Where("id_user = ?", claims.UserID).First(&u).Error; err != nil {
+	// id_tenant ikut diambil dari DB (alias) — tenant dari klaim JWT bisa basi
+	// (user pindah RT ≤72 jam masih membawa tenant lama).
+	if err := m.db.Table("users").Select("role, user_status, id_tenant AS tenant_id").Where("id_user = ?", claims.UserID).First(&u).Error; err != nil {
 		return errBadToken // user tidak ditemukan / DB error → tolak (no auth-bypass)
 	}
 	switch u.UserStatus {
-	case "rejected", "banned", "suspend", "nonaktif":
+	case "rejected", "banned", "suspend", "suspended", "nonaktif":
 		return errBadToken // akun diblokir → sesi dicabut
 	}
 	c.Locals("role", u.Role)
+	c.Locals("tenant_id", u.TenantID)
 	c.Locals("auth_checked", true)
 	return nil
 }

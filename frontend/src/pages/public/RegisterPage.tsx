@@ -45,7 +45,7 @@ export function RegisterPage() {
         <form onSubmit={submit} className="space-y-3">
           <input type="text" placeholder="Nama Lengkap" required autoComplete="name" value={form.nama_lengkap} onChange={(e) => setForm({ ...form, nama_lengkap: e.target.value })} className={inputCls} />
           <input type="tel" placeholder="Nomor WA (08xxxx)" required autoComplete="tel" value={form.nomor_wa} onChange={(e) => setForm({ ...form, nomor_wa: e.target.value })} className={inputCls} />
-          <input type="password" placeholder="Password (min 6 karakter)" required autoComplete="new-password" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputCls} />
+          <input type="password" placeholder="Password (min 8 karakter)" required autoComplete="new-password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputCls} />
           <button type="submit" disabled={busy} className="w-full min-h-[48px] rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50">
             {busy ? 'Membuat akun…' : 'Daftar & Masuk'}
           </button>

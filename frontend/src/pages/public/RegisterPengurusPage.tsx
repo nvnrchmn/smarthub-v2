@@ -106,10 +106,10 @@ export function RegisterPengurusPage() {
             />
             <input
               type="password"
-              placeholder="Password (min 6 karakter)"
+              placeholder="Password (min 8 karakter)"
               required
               autoComplete="new-password"
-              minLength={6}
+              minLength={8}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               className={inputCls}
