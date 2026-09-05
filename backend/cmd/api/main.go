@@ -12,6 +12,8 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/internal/keuangan"
 	"github.com/nvnrchmn/smarthub-v2/internal/lapak"
 	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
+	"github.com/nvnrchmn/smarthub-v2/internal/notifikasi"
+	"github.com/nvnrchmn/smarthub-v2/internal/upload"
 	"github.com/nvnrchmn/smarthub-v2/internal/warga"
 	"github.com/nvnrchmn/smarthub-v2/internal/wilayah"
 	"github.com/nvnrchmn/smarthub-v2/pkg/database"
@@ -41,6 +43,7 @@ func main() {
 	wargaHandler := warga.NewHandler(wargaService)
 
 	app := fiber.New(fiber.Config{
+		BodyLimit: 15 << 20, // izinkan upload foto s/d ~8MB + multipart overhead
 		ErrorHandler: func(c fiber.Ctx, err error) error {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		},
@@ -98,6 +101,14 @@ func main() {
 	adminRepo := admin.NewRepository(db.SQL)
 	adminHandler := admin.NewHandler(adminRepo, settingsStore)
 	adminHandler.RegisterRoute(app, mw)
+
+	// Notifikasi @mention
+	notifRepo := notifikasi.NewRepository(db.SQL)
+	notifHandler := notifikasi.NewHandler(notifRepo)
+	notifHandler.RegisterRoute(app, mw)
+
+	// Upload foto produk (tersimpan di webroot /uploads)
+	upload.RegisterRoute(app, mw, cfg.UploadDir)
 
 	log.Printf("Smarthub v2 listening on :%s", cfg.ServerPort)
 	log.Fatal(app.Listen(":" + cfg.ServerPort))

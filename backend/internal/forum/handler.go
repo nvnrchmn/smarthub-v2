@@ -1,6 +1,7 @@
 package forum
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
@@ -61,7 +62,32 @@ func (h *Handler) CreateThread(c fiber.Ctx) error {
 	if err := h.service.CreateThread(&t, role); err != nil {
 		return c.Status(403).JSON(fiber.Map{"error": err.Error()})
 	}
+	h.notifyMentions(t.IDTenant, t.IDUser, t.Konten, "post", &t.IDThread, fmt.Sprintf("Anda disebut di postingan %q", t.Judul))
 	return c.Status(201).JSON(t)
+}
+
+// notifyMentions — deteksi @Nama di teks lalu buat notifikasi per warga yang disebut.
+// Best-effort: kegagalan tak mengganggu alur utama.
+func (h *Handler) notifyMentions(tenantID, authorID int, teks, tipe string, refID *int, pesan string) {
+	warga, err := h.service.repo.ListWargaMention(tenantID)
+	if err != nil {
+		return
+	}
+	terkena := MentionedUsers(teks, warga, authorID)
+	if len(terkena) == 0 {
+		return
+	}
+	items := make([]model.Notifikasi, 0, len(terkena))
+	for _, w := range terkena {
+		items = append(items, model.Notifikasi{
+			IDUser:   w.IDUser,
+			IDTenant: tenantID,
+			Tipe:     tipe,
+			IDRef:    refID,
+			Pesan:    pesan,
+		})
+	}
+	_ = h.service.repo.InsertNotifs(items)
 }
 
 func (h *Handler) GetThread(c fiber.Ctx) error {
@@ -107,5 +133,6 @@ func (h *Handler) CreateKomentar(c fiber.Ctx) error {
 	if err := h.service.CreateKomentar(&k); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
+	h.notifyMentions(thread.IDTenant, k.IDUser, k.Komentar, "komentar", &thread.IDThread, fmt.Sprintf("Anda disebut di komentar %q", thread.Judul))
 	return c.Status(201).JSON(k)
 }

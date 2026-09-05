@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import { fmt, cn } from '../../lib/utils'
 import { Icon } from '../../components/ui/Icon'
 import { Drawer } from '../../components/ui/Drawer'
+import { FotoField } from '../../components/ui/FotoField'
 import { timeAgo } from '../../components/forum/mention'
 
 interface Produk {
@@ -274,12 +275,14 @@ export function LapakRT() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-text-secondary">FOTO (URL)</label>
+              <label className="mb-1.5 block text-xs font-semibold text-text-secondary">FOTO</label>
+              <FotoField value={form.foto} onChange={(v) => setForm({ ...form, foto: v })} />
+              <p className="mt-2 text-[11px] text-text-secondary">Unggah dari galeri, atau tempel tautan gambar di bawah.</p>
               <input
                 value={form.foto}
                 onChange={(e) => setForm({ ...form, foto: e.target.value })}
-                placeholder="https://…"
-                className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+                placeholder="https://… atau /uploads/…"
+                className="mt-2 h-12 w-full rounded-2xl border border-border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>

@@ -63,6 +63,10 @@ export function ForumFeed({ canAnnounce }: Props) {
   const [komentar, setKomentar] = useState('')
   const [komenLoading, setKomenLoading] = useState(false)
 
+  const [notifList, setNotifList] = useState<Array<{ id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }>>([])
+  const [notifUnread, setNotifUnread] = useState(0)
+  const [openNotif, setOpenNotif] = useState(false)
+
   const muat = useCallback(async () => {
     try {
       setLoading(true)
@@ -76,8 +80,44 @@ export function ForumFeed({ canAnnounce }: Props) {
     }
   }, [])
 
+  const muatNotif = useCallback(async () => {
+    try {
+      const d = await api<{ list: { id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }[]; unread: number }>('/notifikasi')
+      setNotifList(d.list)
+      setNotifUnread(d.unread)
+    } catch {
+      /* abaikan */
+    }
+  }, [])
+
+  const bukaNotif = async () => {
+    setOpenNotif(true)
+    try {
+      const d = await api<{ list: { id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }[]; unread: number }>('/notifikasi')
+      setNotifList(d.list)
+      if (d.unread > 0) {
+        await api('/notifikasi/read-all', { method: 'PUT' })
+        setNotifUnread(0)
+      }
+    } catch {
+      /* abaikan */
+    }
+  }
+
+  const bukaDariNotif = async (n: { id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }) => {
+    setOpenNotif(false)
+    if (!n.id_ref) return
+    try {
+      const d = await api<{ thread: Thread }>(`/forum/${n.id_ref}`)
+      if (d?.thread) void bukaDetail(d.thread)
+    } catch {
+      /* abaikan */
+    }
+  }
+
   useEffect(() => {
     muat()
+    muatNotif()
     api('/warga')
       .then((rows: Array<{ id_user: number | null; nama_lengkap: string }>) =>
         setNamaWarga(
@@ -128,6 +168,7 @@ export function ForumFeed({ canAnnounce }: Props) {
       setKonten('')
       setTipe('Diskusi')
       muat()
+      muatNotif()
     } catch {
       setPesan('Gagal mengirim. Coba lagi.')
     } finally {
@@ -144,6 +185,7 @@ export function ForumFeed({ canAnnounce }: Props) {
       const d = await api(`/forum/${openDetail.id_thread}`)
       setDetail(d)
       muat()
+      muatNotif()
     } catch {
       /* abaikan — tetap tampilkan drawer */
     } finally {
@@ -155,17 +197,32 @@ export function ForumFeed({ canAnnounce }: Props) {
     <>
       <div className="flex items-center justify-between pb-1">
         <p className="text-sm text-text-secondary">Ayo ngobrol & berbagi info dengan tetangga</p>
-        <button
-          type="button"
-          onClick={() => {
-            setPesan('')
-            setOpenBuat(true)
-          }}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform active:scale-95"
-          aria-label="Buat thread"
-        >
-          <Icon name="plus" size={20} />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={bukaNotif}
+            aria-label="Notifikasi"
+            className="relative grid h-11 w-11 place-items-center rounded-xl border border-border bg-surface-card text-text-secondary transition-transform active:scale-95"
+          >
+            <Icon name="bell" size={19} />
+            {notifUnread > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                {notifUnread > 9 ? '9+' : notifUnread}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPesan('')
+              setOpenBuat(true)
+            }}
+            className="grid h-11 w-11 place-items-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform active:scale-95"
+            aria-label="Buat thread"
+          >
+            <Icon name="plus" size={20} />
+          </button>
+        </div>
       </div>
 
       {err && (
@@ -348,6 +405,36 @@ export function ForumFeed({ canAnnounce }: Props) {
             <Icon name="send" size={16} />
           </button>
         </div>
+      </Drawer>
+
+      {/* Drawer notifikasi */}
+      <Drawer open={openNotif} onClose={() => setOpenNotif(false)} title="Notifikasi" subtitle="Sebutan @ di forum">
+        {notifList.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+            <p className="font-semibold text-text-primary">Belum ada notifikasi</p>
+            <p className="mt-1 text-sm text-text-secondary">Warga yang menyebut @Anda akan muncul di sini.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {notifList.map((n) => (
+              <li key={n.id_notifikasi}>
+                <button
+                  type="button"
+                  onClick={() => void bukaDariNotif(n)}
+                  className="flex w-full items-start gap-3 px-1 py-3 text-left transition-colors active:bg-text-disabled/8"
+                >
+                  <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                    <Icon name={n.tipe === 'post' ? 'megaphone' : 'chat'} size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-text-primary">{n.pesan}</span>
+                    <span className="mt-0.5 block text-xs text-text-secondary">{timeAgo(n.created_at)}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Drawer>
     </>
   )

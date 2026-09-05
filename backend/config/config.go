@@ -17,6 +17,7 @@ type Config struct {
 	RedisPass  string
 	JWTSecret  string
 	ServerPort string
+	UploadDir  string
 }
 
 func Load() *Config {
@@ -33,6 +34,7 @@ func Load() *Config {
 		RedisPass:  getEnv("REDIS_PASS", ""),
 		JWTSecret:  getEnv("JWT_SECRET", "change-me-in-production"),
 		ServerPort: getEnv("PORT", "8082"),
+		UploadDir:  getEnv("UPLOAD_DIR", ""),
 	}
 }
 

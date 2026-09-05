@@ -1,6 +1,8 @@
 package forum
 
 import (
+	"strings"
+
 	"github.com/nvnrchmn/smarthub-v2/internal/model"
 	"gorm.io/gorm"
 )
@@ -37,6 +39,55 @@ func (r *Repository) GetKomentarByThread(threadID int) ([]model.Komentar, error)
 	var komentar []model.Komentar
 	err := r.db.Where("id_thread = ?", threadID).Order("created_at ASC").Find(&komentar).Error
 	return komentar, err
+}
+
+// ListWargaMention — daftar warga satu tenant yang punya akun (id_user terisi),
+// untuk mencocokkan @Nama di teks forum.
+func (r *Repository) ListWargaMention(tenantID int) ([]model.WargaMention, error) {
+	var rows []model.WargaMention
+	err := r.db.Table("warga").
+		Select("id_user, nama_lengkap").
+		Where("id_tenant = ? AND id_user IS NOT NULL", tenantID).
+		Scan(&rows).Error
+	return rows, err
+}
+
+// InsertNotifs menyisipkan notifikasi @mention secara batch.
+func (r *Repository) InsertNotifs(items []model.Notifikasi) error {
+	if len(items) == 0 {
+		return nil
+	}
+	return r.db.Create(&items).Error
+}
+
+// MentionedUsers — deteksi @Nama Lengkap yang disebut (case-insensitive, batas kata).
+func MentionedUsers(teks string, warga []model.WargaMention, excludeUser int) []model.WargaMention {
+	lower := strings.ToLower(teks)
+	var out []model.WargaMention
+	for _, w := range warga {
+		if w.IDUser == excludeUser || w.NamaLengkap == "" {
+			continue
+		}
+		target := "@" + strings.ToLower(w.NamaLengkap)
+		idx := strings.Index(lower, target)
+		for idx >= 0 {
+			after := idx + len(target)
+			ok := after >= len(lower) || !isWordChar(lower[after])
+			if ok {
+				out = append(out, w)
+				break
+			}
+			idx = strings.Index(lower[after:], target)
+			if idx >= 0 {
+				idx += after
+			}
+		}
+	}
+	return out
+}
+
+func isWordChar(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '_'
 }
 
 // GetWargaNames memetakan id_user → nama_lengkap untuk penampilan "oleh …".

@@ -29,6 +29,12 @@ type Komentar struct {
 
 func (Komentar) TableName() string { return "forum_komentar" }
 
+// WargaMention — hasil scan warga untuk pencocokan @mention.
+type WargaMention struct {
+	IDUser      int
+	NamaLengkap string
+}
+
 type Produk struct {
 	IDProduk     int       `gorm:"column:id_produk;primaryKey;autoIncrement" json:"id_produk"`
 	IDTenant     int       `gorm:"column:id_tenant" json:"id_tenant"`
