@@ -57,6 +57,14 @@ func (h *Handler) ListAll(c fiber.Ctx) error {
 	return c.JSON(list)
 }
 
+func (h *Handler) ListInvoices(c fiber.Ctx) error {
+	list, err := h.service.ListAllInvoices()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(list)
+}
+
 func (h *Handler) Summary(c fiber.Ctx) error {
 	s, err := h.service.Summary()
 	if err != nil {
@@ -69,6 +77,7 @@ func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware)
 	app.Get("/subscription/layanan", mw.AuthRequired, h.GetLayanan)
 	app.Get("/subscription/invoices", mw.AuthRequired, h.GetInvoices)
 	app.Post("/subscription/invoices/:id/pay", mw.AuthRequired, h.PayInvoice)
-	app.Get("/admin/subscription/layanan", mw.AuthRequired, mw.RoleRequired("super_admin"), h.ListAll)
+	app.Get("/admin/subscription/langganans", mw.AuthRequired, mw.RoleRequired("super_admin"), h.ListAll)
+	app.Get("/admin/subscription/invoices", mw.AuthRequired, mw.RoleRequired("super_admin"), h.ListInvoices)
 	app.Get("/admin/subscription/summary", mw.AuthRequired, mw.RoleRequired("super_admin"), h.Summary)
 }

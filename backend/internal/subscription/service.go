@@ -93,6 +93,13 @@ func (s *Service) ListAll() ([]model.Layanan, error) {
 	return list, err
 }
 
+// ListAllInvoices returns all invoices (super admin)
+func (s *Service) ListAllInvoices() ([]model.Invoice, error) {
+	var list []model.Invoice
+	err := s.db.Order("created_at DESC").Find(&list).Error
+	return list, err
+}
+
 // Summary returns super admin summary
 func (s *Service) Summary() (map[string]interface{}, error) {
 	var totalLayanan, aktif, suspended int64
