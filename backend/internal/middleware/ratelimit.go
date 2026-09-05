@@ -36,7 +36,7 @@ func (rl *rateLimiter) cleanup() {
 	}
 }
 
-func (rl *rateLimiter) limit(max int) fiber.Handler {
+func (rl *rateLimiter) Limit(max int) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		ip := c.IP()
 		rl.mu.Lock()

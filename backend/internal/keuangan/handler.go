@@ -154,12 +154,13 @@ func (h *Handler) WebhookXendit(c fiber.Ctx) error {
 		ID         string `json:"id"`
 		Status     string `json:"status"`
 		ExternalID string `json:"external_id"`
+		Amount     int64  `json:"amount"` // audit 2026-09-05: validasi nominal
 	}
 	if err := c.Bind().JSON(&payload); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid payload"})
 	}
 
-	if err := h.service.HandleWebhook(payload.ID, payload.Status); err != nil {
+	if err := h.service.HandleWebhook(payload.ID, payload.Status, payload.Amount); err != nil {
 		log.Printf("[webhook-xendit] invoice=%s status=%s err=%v", payload.ID, payload.Status, err)
 		// Tetap 200 agar Xendit berhenti retry; masalah dicatat di log.
 		return c.JSON(fiber.Map{"status": "ok", "note": "received"})

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"log"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/nvnrchmn/smarthub-v2/config"
 	"github.com/nvnrchmn/smarthub-v2/internal/admin"
 	"github.com/nvnrchmn/smarthub-v2/internal/auth"
@@ -56,16 +58,46 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		BodyLimit: 15 << 20,
+		// TrustProxy (audit 2026-09-05): trust nginx (loopback) supaya c.IP()
+		// membaca IP asli client dari X-Forwarded-For. Sebelumnya semua user
+		// terlihat 127.0.0.1 → rate limiter in-memory jadi 1 bucket global.
+		TrustProxy: true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Loopback: true,
+		},
+		// X-Real-IP ditimpa nginx ($remote_addr) — tidak bisa di-spoof client,
+		// tidak seperti X-Forwarded-For yang hanya ditambah (bisa dirotasi utk
+		// bypass rate limit).
+		ProxyHeader: "X-Real-IP",
+		// Audit 2026-09-05: ErrorHandler lama memaksa SEMUA error jadi 500
+		// (route tak dikenal → 500, harusnya 404) dan membocorkan err.Error()
+		// (detail internal/DB) ke client. Sekarang hormati kode error Fiber
+		// (404/405/401/...); error >=500 dicatat server-side, client dapat pesan generik.
 		ErrorHandler: func(c fiber.Ctx, err error) error {
-			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+			code := fiber.StatusInternalServerError
+			var fe *fiber.Error
+			if errors.As(err, &fe) {
+				code = fe.Code
+			}
+			if code >= fiber.StatusInternalServerError {
+				log.Printf("ERR %s %s → %v", c.Method(), c.Path(), err)
+				return c.Status(code).JSON(fiber.Map{"error": "internal server error"})
+			}
+			return c.Status(code).JSON(fiber.Map{"error": err.Error()})
 		},
 	})
+
+	// Panic recovery — wajib sebelum middleware lain (audit 2026-09-05)
+	app.Use(recover.New())
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://smarthub.logikraf.id", "http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 	}))
+
+	// Rate limiting — 100 request per menit per IP asli (TrustProxy aktif)
+	app.Use(middleware.RateLimiter.Limit(100))
 
 	app.Get("/healthz", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok", "db": "connected"})
@@ -78,7 +110,7 @@ func main() {
 	app.Post("/auth/register-invite", authHandler.RegisterWithInvite)
 
 	// Protected routes
-	mw := middleware.NewAuthMiddleware(j)
+	mw := middleware.NewAuthMiddleware(j, db.SQL)
 
 	// Invite code management
 	app.Post("/auth/invite-codes", mw.AuthRequired, authHandler.GenerateInviteCode)

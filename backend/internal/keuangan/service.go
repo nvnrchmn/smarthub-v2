@@ -136,12 +136,17 @@ func (s *Service) TagihanDetail(tagihanID, tenantID, userID int, role string) (m
 	}, nil
 }
 
-func (s *Service) HandleWebhook(invID, status string) error {
+func (s *Service) HandleWebhook(invID, status string, amount int64) error {
 	var tagihan model.TagihanIuran
 	if err := s.repo.db.Where("xendit_invoice_id = ?", invID).First(&tagihan).Error; err != nil {
 		return fmt.Errorf("tagihan tidak ditemukan: %s", invID)
 	}
 	if status == "PAID" {
+		// Audit 2026-09-05: jangan tandai PAID kalau nominal webhook tidak cocok
+		// dengan total_nominal tagihan (cegah false-PAID / mismatch invoice).
+		if amount > 0 && int64(tagihan.TotalNominal) != amount {
+			return fmt.Errorf("nominal tidak cocok: webhook=%d tagihan=%.0f", amount, tagihan.TotalNominal)
+		}
 		now := time.Now()
 		return s.repo.UpdateStatusTagihan(tagihan.IDTagihan, "PAID", &now)
 	}
