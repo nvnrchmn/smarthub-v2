@@ -35,6 +35,7 @@ import { ForumRT } from './pages/rt/ForumRT'
 import { LapakRT } from './pages/rt/LapakRT'
 import { RTPengaturanPage } from './pages/rt/PengaturanPage'
 import { RTSettlementPage } from './pages/rt/SettlementPage'
+import { LanggananPage } from './pages/rt/LanggananPage'
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/Dashboard'
@@ -42,6 +43,8 @@ import { TenantsPage } from './pages/admin/TenantsPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { SettingsPage } from './pages/admin/SettingsPage'
 import { AdminSettlementPage } from './pages/admin/SettlementPage'
+import { AdminSubscriptionPage } from './pages/admin/SubscriptionPage'
+import { AdminCMSPage } from './pages/admin/CMSPage'
 import { TenantDetailPage } from './pages/admin/TenantDetailPage'
 import { AuditLogPage } from './pages/admin/AuditLogPage'
 import { BroadcastPage } from './pages/admin/BroadcastPage'
@@ -84,6 +87,7 @@ export default function App() {
           <Route path="/rt/lapak" element={<LapakRT />} />
           <Route path="/rt/pengaturan" element={<RTPengaturanPage />} />
           <Route path="/rt/settlement" element={<RTSettlementPage />} />
+          <Route path="/rt/langganan" element={<LanggananPage />} />
         </Route>
 
         {/* Super Admin */}
@@ -93,6 +97,8 @@ export default function App() {
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/settings" element={<SettingsPage />} />
           <Route path="/admin/settlement" element={<AdminSettlementPage />} />
+          <Route path="/admin/subscription" element={<AdminSubscriptionPage />} />
+          <Route path="/admin/cms" element={<AdminCMSPage />} />
           <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
           <Route path="/admin/audit-logs" element={<AuditLogPage />} />
           <Route path="/admin/broadcast" element={<BroadcastPage />} />

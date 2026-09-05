@@ -8,12 +8,14 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/config"
 	"github.com/nvnrchmn/smarthub-v2/internal/admin"
 	"github.com/nvnrchmn/smarthub-v2/internal/auth"
+	"github.com/nvnrchmn/smarthub-v2/internal/cms"
 	"github.com/nvnrchmn/smarthub-v2/internal/forum"
 	"github.com/nvnrchmn/smarthub-v2/internal/keuangan"
 	"github.com/nvnrchmn/smarthub-v2/internal/lapak"
 	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
 	"github.com/nvnrchmn/smarthub-v2/internal/notifikasi"
 	"github.com/nvnrchmn/smarthub-v2/internal/settlement"
+	"github.com/nvnrchmn/smarthub-v2/internal/subscription"
 	"github.com/nvnrchmn/smarthub-v2/internal/upload"
 	"github.com/nvnrchmn/smarthub-v2/internal/warga"
 	"github.com/nvnrchmn/smarthub-v2/internal/wilayah"
@@ -117,6 +119,16 @@ func main() {
 	settlementService := settlement.NewService(db.SQL)
 	settlementHandler := settlement.NewHandler(settlementService)
 	settlementHandler.RegisterRoute(app, mw)
+
+	// CMS Landing
+	cmsService := cms.NewService(db.SQL)
+	cmsHandler := cms.NewHandler(cmsService)
+	cmsHandler.RegisterRoute(app, mw)
+
+	// Subscription
+	subscriptionService := subscription.NewService(db.SQL)
+	subscriptionHandler := subscription.NewHandler(subscriptionService)
+	subscriptionHandler.RegisterRoute(app, mw)
 
 	// Notifikasi @mention
 	notifService := notifikasi.NewService(db.SQL)

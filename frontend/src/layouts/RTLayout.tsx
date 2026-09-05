@@ -8,6 +8,7 @@ const rtLinks: { path: string; label: string; icon: IconName }[] = [
   { path: '/rt/warga', label: 'Warga', icon: 'users' },
   { path: '/rt/tagihan', label: 'Tagihan', icon: 'wallet' },
   { path: '/rt/settlement', label: 'Settlement', icon: 'bank' },
+  { path: '/rt/langganan', label: 'Langganan', icon: 'star' },
   { path: '/rt/pengaturan', label: 'Pengaturan', icon: 'settings' },
 ]
 
