@@ -1,171 +1,230 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../lib/api'
+import { fmt } from '../../lib/utils'
+import { ErrorState, KPI, Skeleton } from '../../components/ui/bento'
 import { Icon } from '../../components/ui/Icon'
-import { BentoCard, ErrorState, Skeleton } from '../../components/ui/bento'
+import { Drawer } from '../../components/ui/Drawer'
 
-interface SettlementInfo {
-  nama_pemilik_rekening: string
-  bank_code: string
-  nomor_rekening: string
-  ktp_url: string
-  ktp_verified: boolean
-  xendit_kyc_status: string
-  nama_rt_rw: string
-  alamat: string
+interface SettlementRow {
+  id_settlement: number
+  requested_by: number
+  total_nominal: number
+  status: string
+  created_at: string
 }
 
-const BANK_OPTIONS = [
-  { value: 'BCA', label: 'BCA' },
-  { value: 'BRI', label: 'BRI' },
-  { value: 'BNI', label: 'BNI' },
-  { value: 'MANDIRI', label: 'Mandiri' },
-  { value: 'CIMB', label: 'CIMB Niaga' },
-  { value: 'DANAMON', label: 'Danamon' },
-]
+interface SettlementTagihan {
+  id_tagihan: number
+  id_rumah: number
+  periode_bulan_tahun: string
+  total_nominal: number
+  nama_warga: string
+}
 
-export function SettlementPage() {
-  const [info, setInfo] = useState<SettlementInfo | null>(null)
+export function RTSettlementPage() {
+  const [balance, setBalance] = useState(0)
+  const [tagihan, setTagihan] = useState<SettlementTagihan[]>([])
+  const [settlements, setSettlements] = useState<SettlementRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [form, setForm] = useState({ nama_pemilik: '', bank_code: '', nomor_rekening: '' })
+  const [showRequest, setShowRequest] = useState(false)
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     setLoading(true)
-    setError('')
-    try {
-      const res = await api<any>('/settlement/info')
-      setInfo(res)
-      setForm({
-        nama_pemilik: res.nama_pemilik_rekening || '',
-        bank_code: res.bank_code || '',
-        nomor_rekening: res.nomor_rekening || ''
+    Promise.all([
+      api<{ total_balance: number; paid_tagihan: SettlementTagihan[] }>('/settlement/balance'),
+      api<{ data: SettlementRow[] }>('/settlements')
+    ])
+      .then(([bal, list]) => {
+        setBalance(bal.total_balance)
+        setTagihan(bal.paid_tagihan || [])
+        setSettlements(list.data)
       })
-    } catch (e: any) {
-      setError(e.message || 'Gagal memuat data settlement')
-    } finally {
-      setLoading(false)
-    }
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  const saveRekening = async () => {
-    setSaving(true)
-    setError('')
-    setSuccess('')
-    try {
-      await api('/settlement/rekening', {
-        method: 'POST',
-        body: JSON.stringify({
-          nama_pemilik: form.nama_pemilik,
-          bank_code: form.bank_code,
-          nomor_rekening: form.nomor_rekening
-        })
-      })
-      setSuccess('Data rekening berhasil disimpan')
-      load()
-    } catch (e: any) {
-      setError(e.message || 'Gagal menyimpan data rekening')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const statusKYC = info?.xendit_kyc_status || 'PENDING'
-  const statusLabel = statusKYC === 'LIVE' ? 'Terverifikasi' : statusKYC === 'REJECTED' ? 'Ditolak' : 'Menunggu Verifikasi'
-  const statusColor = statusKYC === 'LIVE' ? 'text-emerald-500' : statusKYC === 'REJECTED' ? 'text-red-500' : 'text-amber-500'
-
-  if (loading) return <Skeleton className="h-96" />
-
   return (
-    <div className="max-w-2xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-xl font-bold text-text-primary">Settlement & Rekening</h1>
-        <p className="mt-1 text-sm text-text-secondary">Kelola data rekening untuk penerimaan dana iuran</p>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <header>
+        <h1 className="text-xl font-bold text-text-primary">Settlement</h1>
+        <p className="text-sm text-text-secondary">Cairkan dana tagihan warga yang sudah dibayar via QRIS</p>
       </header>
 
       {error && <ErrorState message={error} />}
-      {success && <div className="mb-4 rounded-xl bg-emerald-500/10 p-4 text-sm text-emerald-500">{success}</div>}
-
-      <div className="space-y-4">
-        {/* Status KYC */}
-        <BentoCard className="p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-text-primary">Status Verifikasi</h2>
-              <p className="mt-1 text-sm text-text-secondary">{info?.nama_rt_rw || 'Tenant'}</p>
-            </div>
-            <span className={`text-sm font-semibold ${statusColor}`}>{statusLabel}</span>
-          </div>
-        </BentoCard>
-
-        {/* Form Rekening */}
-        <BentoCard className="p-5">
-          <h2 className="font-semibold text-text-primary mb-4">Data Rekening</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Nama Pemilik Rekening</label>
-              <input
-                type="text"
-                value={form.nama_pemilik}
-                onChange={(e) => setForm({ ...form, nama_pemilik: e.target.value })}
-                className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-text-primary focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-                placeholder="Nama sesuai buku tabungan"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Bank</label>
-              <select
-                value={form.bank_code}
-                onChange={(e) => setForm({ ...form, bank_code: e.target.value })}
-                className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-text-primary focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Pilih Bank</option>
-                {BANK_OPTIONS.map((b) => (
-                  <option key={b.value} value={b.value}>{b.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Nomor Rekening</label>
-              <input
-                type="text"
-                value={form.nomor_rekening}
-                onChange={(e) => setForm({ ...form, nomor_rekening: e.target.value })}
-                className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-text-primary focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-                placeholder="Masukkan nomor rekening"
-              />
-            </div>
-
-            <button
-              onClick={saveRekening}
-              disabled={saving || !form.nama_pemilik || !form.bank_code || !form.nomor_rekening}
-              className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Menyimpan...' : 'Simpan Data Rekening'}
-            </button>
-          </div>
-        </BentoCard>
-
-        {/* Info */}
-        <div className="rounded-xl border border-border bg-surface-card p-4">
-          <div className="flex items-start gap-3">
-            <Icon name="info" size={18} className="text-text-secondary mt-0.5" />
-            <div className="text-sm text-text-secondary">
-              <p className="font-medium text-text-primary mb-1">Proses Settlement</p>
-              <ol className="list-decimal list-inside space-y-1 text-xs">
-                <li>Isi data rekening dan upload KTP di sini</li>
-                <li>Super Admin akan memverifikasi data Anda</li>
-                <li>Setelah terverifikasi, dana iuran masuk ke rekening Anda</li>
-              </ol>
-            </div>
-          </div>
+      {loading ? <Skeleton className="h-32" /> : (
+        <div className="grid grid-cols-2 gap-3">
+          <KPI icon="wallet" label="Saldo Tersedia" value={fmt(balance)} tone="success" />
+          <KPI icon="receipt" label="Tagihan Lunas" value={String(tagihan.length)} />
         </div>
+      )}
+
+      <div className="rounded-2xl border border-border bg-surface-card p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-text-primary">Tagihan Siap Cair</h2>
+          <button
+            onClick={() => setShowRequest(true)}
+            disabled={balance === 0}
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Ajukan Settlement
+          </button>
+        </div>
+        {tagihan.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center">
+            <Icon name="inbox" size={24} className="mx-auto text-text-disabled" />
+            <p className="mt-2 text-sm text-text-secondary">Belum ada tagihan lunas yang siap dicairkan</p>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {tagihan.slice(0, 5).map(t => (
+              <div key={t.id_tagihan} className="flex items-center justify-between rounded-xl bg-surface px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium text-text-primary">{t.nama_warga}</p>
+                  <p className="text-xs text-text-secondary">{t.periode_bulan_tahun}</p>
+                </div>
+                <span className="text-sm font-semibold text-status-paid">{fmt(t.total_nominal)}</span>
+              </div>
+            ))}
+            {tagihan.length > 5 && <p className="text-center text-xs text-text-disabled">+{tagihan.length - 5} tagihan lainnya</p>}
+          </div>
+        )}
       </div>
+
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-text-primary">Riwayat Settlement</h2>
+        {settlements.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border p-6 text-center">
+            <p className="text-sm text-text-secondary">Belum ada riwayat settlement</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {settlements.map(s => (
+              <div key={s.id_settlement} className="flex items-center justify-between rounded-xl border border-border bg-surface-card px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-text-primary">Settlement #{s.id_settlement}</p>
+                  <p className="text-xs text-text-secondary">{new Date(s.created_at).toLocaleDateString('id-ID')}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-text-primary">{fmt(s.total_nominal)}</p>
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    s.status === 'COMPLETED' ? 'bg-status-paid-bg text-status-paid' :
+                    s.status === 'REJECTED' ? 'bg-status-overdue-bg text-status-overdue' :
+                    'bg-primary/10 text-primary'
+                  }`}>
+                    {s.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Drawer open={showRequest} onClose={() => setShowRequest(false)} title="Ajukan Settlement">
+        <SettlementForm balance={tagihan.reduce((s, t) => s + Number(t.total_nominal), 0)} onSuccess={() => { setShowRequest(false); load() }} />
+      </Drawer>
+    </div>
+  )
+}
+
+function SettlementForm({ balance, onSuccess }: { balance: number; onSuccess: () => void }) {
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ nama_pemilik: '', bank_code: '', nomor_rekening: '', note: '' })
+
+  const submit = async () => {
+    if (!form.nama_pemilik || !form.bank_code || !form.nomor_rekening) {
+      setError('Semua field wajib diisi')
+      return
+    }
+    setSubmitting(true)
+    try {
+      await api('/settlement/request', {
+        method: 'POST',
+        body: JSON.stringify({
+          total_nominal: balance,
+          bank_code: form.bank_code,
+          account_number: form.nomor_rekening,
+          account_name: form.nama_pemilik,
+          note: form.note
+        })
+      })
+      onSuccess()
+    } catch (e: any) {
+      setError(e.message || 'Gagal mengajukan settlement')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl bg-status-paid-bg/20 p-4 text-center">
+        <p className="text-xs text-text-secondary">Total yang akan dicairkan</p>
+        <p className="text-2xl font-bold text-status-paid">{fmt(balance)}</p>
+      </div>
+
+      {error && <p className="rounded-xl bg-status-overdue-bg p-3 text-sm text-status-overdue">{error}</p>}
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-text-secondary">Nama Pemilik Rekening</label>
+        <input
+          type="text"
+          value={form.nama_pemilik}
+          onChange={e => setForm({ ...form, nama_pemilik: e.target.value })}
+          placeholder="Nama sesuai rekening"
+          className="h-11 w-full rounded-xl border border-border bg-surface px-4 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-text-secondary">Bank</label>
+        <select
+          value={form.bank_code}
+          onChange={e => setForm({ ...form, bank_code: e.target.value })}
+          className="h-11 w-full rounded-xl border border-border bg-surface px-4 text-sm"
+        >
+          <option value="">Pilih bank</option>
+          <option value="BCA">BCA</option>
+          <option value="BNI">BNI</option>
+          <option value="BRI">BRI</option>
+          <option value="MANDIRI">Mandiri</option>
+          <option value="BRI">BRI</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-text-secondary">Nomor Rekening</label>
+        <input
+          type="text"
+          value={form.nomor_rekening}
+          onChange={e => setForm({ ...form, nomor_rekening: e.target.value })}
+          placeholder="1234567890"
+          className="h-11 w-full rounded-xl border border-border bg-surface px-4 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-text-secondary">Catatan (opsional)</label>
+        <input
+          type="text"
+          value={form.note}
+          onChange={e => setForm({ ...form, note: e.target.value })}
+          placeholder="Catatan untuk admin"
+          className="h-11 w-full rounded-xl border border-border bg-surface px-4 text-sm"
+        />
+      </div>
+
+      <button
+        onClick={submit}
+        disabled={submitting}
+        className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-all hover:bg-primary/90 disabled:opacity-50"
+      >
+        {submitting ? 'Mengajukan...' : 'Ajukan Settlement'}
+      </button>
     </div>
   )
 }

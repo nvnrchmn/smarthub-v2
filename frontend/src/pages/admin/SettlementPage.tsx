@@ -1,167 +1,147 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../lib/api'
-import { BentoCard, ErrorState, KPI, Skeleton } from '../../components/ui/bento'
+import { fmt } from '../../lib/utils'
+import { ErrorState, KPI, Skeleton } from '../../components/ui/bento'
 
 interface SettlementRow {
+  id_settlement: number
   id_tenant: number
-  nama_rt_rw: string
-  nama_pemilik_rekening: string
+  total_nominal: number
   bank_code: string
-  nomor_rekening: string
-  ktp_url: string
-  ktp_verified: boolean
-  xendit_kyc_status: string
+  account_number: string
+  account_name: string
+  status: string
+  note: string
   created_at: string
-}
-
-interface Summary {
-  total_tenants: number
-  kyc_pending: number
-  kyc_live: number
-  kyc_rejected: number
+  completed_at: string
+  reject_reason: string
 }
 
 export function AdminSettlementPage() {
-  const [tenants, setTenants] = useState<SettlementRow[]>([])
-  const [summary, setSummary] = useState<Summary | null>(null)
+  const [settlements, setSettlements] = useState<SettlementRow[]>([])
+  const [summary, setSummary] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('')
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     setLoading(true)
-    setError('')
-    try {
-      const [listRes, summaryRes] = await Promise.all([
-        api<any>(`/admin/settlements?status=${filter}`),
-        api<Summary>('/admin/settlements/summary')
-      ])
-      setTenants(listRes.data || [])
-      setSummary(summaryRes)
-    } catch (e: any) {
-      setError(e.message || 'Gagal memuat data settlement')
-    } finally {
-      setLoading(false)
-    }
+    Promise.all([
+      api<{ data: SettlementRow[] }>(`/settlements?status=${filter}`),
+      api('/admin/settlements/summary')
+    ])
+      .then(([list, sum]) => {
+        setSettlements(list.data)
+        setSummary(sum)
+      })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
   }, [filter])
 
   useEffect(() => { load() }, [load])
 
-  const verify = async (id: number) => {
-    try {
-      await api(`/admin/settlements/${id}/verify`, { method: 'POST' })
-      load()
-    } catch (e: any) {
-      setError(e.message || 'Gagal memverifikasi')
-    }
+  const complete = async (id: number) => {
+    await api(`/admin/settlements/${id}/complete`, { method: 'POST' })
+    load()
   }
 
   const reject = async (id: number) => {
-    try {
-      await api(`/admin/settlements/${id}/reject`, { method: 'POST' })
-      load()
-    } catch (e: any) {
-      setError(e.message || 'Gagal menolak')
-    }
+    const reason = prompt('Alasan penolakan?')
+    if (!reason) return
+    await api(`/admin/settlements/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    })
+    load()
   }
 
-  const statusLabel = (s: string) => s === 'LIVE' ? 'Terverifikasi' : s === 'REJECTED' ? 'Ditolak' : 'Pending'
-  const statusColor = (s: string) => s === 'LIVE' ? 'text-emerald-500' : s === 'REJECTED' ? 'text-red-500' : 'text-amber-500'
-
-  if (loading) return <Skeleton className="h-96" />
-
   return (
-    <div className="max-w-5xl mx-auto">
-      <header className="mb-6">
+    <div className="mx-auto max-w-4xl space-y-4">
+      <header>
         <h1 className="text-xl font-bold text-text-primary">Settlement</h1>
-        <p className="mt-1 text-sm text-text-secondary">Kelola verifikasi rekening dan KYC tenant</p>
+        <p className="text-sm text-text-secondary">Kelola pencairan dana tagihan QRIS ke rekening tenant</p>
       </header>
 
       {error && <ErrorState message={error} />}
 
-      {/* Summary */}
-      {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <KPI icon="building" label="Total Tenant" value={summary.total_tenants} />
-          <KPI icon="clock" label="Pending" value={summary.kyc_pending} tone="warning" />
-          <KPI icon="check" label="Terverifikasi" value={summary.kyc_live} tone="success" />
-          <KPI icon="x" label="Ditolak" value={summary.kyc_rejected} tone="danger" />
+      {loading ? <Skeleton className="h-32" /> : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <KPI icon="building" label="Total Tenant" value={String(summary?.total_tenants || 0)} />
+          <KPI icon="clock" label="Pending" value={String(summary?.pending_count || 0)} tone="warning" />
+          <KPI icon="check" label="Selesai" value={String(summary?.completed_count || 0)} tone="success" />
+          <KPI icon="x" label="Ditolak" value={String(summary?.rejected_count || 0)} tone="danger" />
         </div>
       )}
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-4">
-        {['all', 'PENDING', 'LIVE', 'REJECTED'].map((s) => (
+      <div className="flex gap-2">
+        {['', 'PENDING', 'COMPLETED', 'REJECTED'].map(s => (
           <button
             key={s}
             onClick={() => setFilter(s)}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              filter === s ? 'bg-primary text-white' : 'bg-surface-card border border-border text-text-secondary hover:bg-text-disabled/10'
+              filter === s ? 'bg-primary text-white' : 'bg-surface-card border border-border text-text-secondary'
             }`}
           >
-            {s === 'all' ? 'Semua' : s === 'LIVE' ? 'Terverifikasi' : s === 'REJECTED' ? 'Ditolak' : 'Pending'}
+            {s === '' ? 'Semua' : s}
           </button>
         ))}
       </div>
 
-      {/* Table */}
-      <BentoCard className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-surface-card">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-text-secondary">Tenant</th>
-                <th className="px-4 py-3 text-left font-medium text-text-secondary">Rekening</th>
-                <th className="px-4 py-3 text-left font-medium text-text-secondary">Status</th>
-                <th className="px-4 py-3 text-right font-medium text-text-secondary">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {tenants.map((t) => (
-                <tr key={t.id_tenant} className="hover:bg-text-disabled/5">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-text-primary">{t.nama_rt_rw}</div>
-                    <div className="text-xs text-text-secondary">{t.nama_pemilik_rekening}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-text-primary">{t.bank_code} {t.nomor_rekening}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold ${statusColor(t.xendit_kyc_status)}`}>
-                      {statusLabel(t.xendit_kyc_status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {t.xendit_kyc_status === 'PENDING' && (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => verify(t.id_tenant)}
-                          className="rounded-lg bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-500 hover:bg-emerald-500/20"
-                        >
-                          Verifikasi
-                        </button>
-                        <button
-                          onClick={() => reject(t.id_tenant)}
-                          className="rounded-lg bg-red-500/10 px-3 py-1 text-xs font-medium text-red-500 hover:bg-red-500/20"
-                        >
-                          Tolak
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {tenants.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-text-secondary">
-                    Tidak ada data settlement
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {settlements.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-text-secondary">Tidak ada data settlement</p>
         </div>
-      </BentoCard>
+      ) : (
+        <div className="space-y-2">
+          {settlements.map(s => (
+            <div key={s.id_settlement} className="rounded-xl border border-border bg-surface-card p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-text-primary">#{s.id_settlement}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      s.status === 'COMPLETED' ? 'bg-status-paid-bg text-status-paid' :
+                      s.status === 'REJECTED' ? 'bg-status-overdue-bg text-status-overdue' :
+                      'bg-primary/10 text-primary'
+                    }`}>
+                      {s.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">Tenant #{s.id_tenant}</p>
+                  {s.note && <p className="mt-1 text-xs text-text-disabled">{s.note}</p>}
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-text-primary">{fmt(s.total_nominal)}</p>
+                  <p className="text-xs text-text-secondary">{new Date(s.created_at).toLocaleDateString('id-ID')}</p>
+                </div>
+              </div>
+
+              {s.status === 'PENDING' && (
+                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                  <button
+                    onClick={() => complete(s.id_settlement)}
+                    className="flex-1 rounded-lg bg-status-paid py-2 text-xs font-semibold text-white hover:bg-status-paid/90"
+                  >
+                    Selesaikan
+                  </button>
+                  <button
+                    onClick={() => reject(s.id_settlement)}
+                    className="flex-1 rounded-lg bg-status-overdue py-2 text-xs font-semibold text-white hover:bg-status-overdue/90"
+                  >
+                    Tolak
+                  </button>
+                </div>
+              )}
+
+              {s.account_name && (
+                <div className="mt-2 rounded-lg bg-surface p-2 text-xs text-text-secondary">
+                  <p>{s.account_name} • {s.bank_code} • {s.account_number}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

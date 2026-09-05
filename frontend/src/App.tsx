@@ -34,7 +34,7 @@ import { RTTagihanPage } from './pages/rt/TagihanPage'
 import { ForumRT } from './pages/rt/ForumRT'
 import { LapakRT } from './pages/rt/LapakRT'
 import { RTPengaturanPage } from './pages/rt/PengaturanPage'
-import { SettlementPage } from './pages/rt/SettlementPage'
+import { RTSettlementPage } from './pages/rt/SettlementPage'
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/Dashboard'
@@ -79,7 +79,7 @@ export default function App() {
           <Route path="/rt/forum/:id" element={<ForumDetailPage />} />
           <Route path="/rt/lapak" element={<LapakRT />} />
           <Route path="/rt/pengaturan" element={<RTPengaturanPage />} />
-          <Route path="/rt/settlement" element={<SettlementPage />} />
+          <Route path="/rt/settlement" element={<RTSettlementPage />} />
         </Route>
 
         {/* Super Admin */}
