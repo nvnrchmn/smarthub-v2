@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -33,22 +34,22 @@ func (s *Service) WebhookToken() string {
 const xenditAPI = "https://api.xendit.co/v2/invoices"
 
 type XenditInvoiceReq struct {
-	ExternalID          string `json:"external_id"`
-	Amount              int64  `json:"amount"`
-	Description         string `json:"description"`
-	PayerEmail          string `json:"payer_email,omitempty"`
-	Currency            string `json:"currency"`
-	SuccessRedirectURL  string `json:"success_redirect_url,omitempty"`
-	FailureRedirectURL  string `json:"failure_redirect_url,omitempty"`
-	InvoiceDuration     int    `json:"invoice_duration"`
-	CustomerNotification bool  `json:"customer_notification_preference"`
+	ExternalID           string `json:"external_id"`
+	Amount               int64  `json:"amount"`
+	Description          string `json:"description"`
+	PayerEmail           string `json:"payer_email,omitempty"`
+	Currency             string `json:"currency"`
+	SuccessRedirectURL   string `json:"success_redirect_url,omitempty"`
+	FailureRedirectURL   string `json:"failure_redirect_url,omitempty"`
+	InvoiceDuration      int    `json:"invoice_duration"`
+	CustomerNotification bool   `json:"customer_notification_preference,omitempty"`
 }
 
 type XenditInvoiceRes struct {
-	ID          string `json:"id"`
-	InvoiceURL  string `json:"invoice_url"`
-	Status      string `json:"status"`
-	ExternalID  string `json:"external_id"`
+	ID         string `json:"id"`
+	InvoiceURL string `json:"invoice_url"`
+	Status     string `json:"status"`
+	ExternalID string `json:"external_id"`
 }
 
 // CreateXenditInvoice membuat invoice Xendit untuk tagihan.
@@ -62,13 +63,13 @@ func (s *Service) CreateXenditInvoice(tenantID, tagihanID int, nominal float64, 
 
 	extID := fmt.Sprintf("SHV2-%d-%d", tenantID, tagihanID)
 	reqBody := XenditInvoiceReq{
-		ExternalID:     extID,
-		Amount:         int64(nominal),
-		Description:    desc,
-		PayerEmail:     payerEmail,
-		Currency:       "IDR",
+		ExternalID:         extID,
+		Amount:             int64(nominal),
+		Description:        desc,
+		PayerEmail:         payerEmail,
+		Currency:           "IDR",
 		SuccessRedirectURL: successURL,
-		InvoiceDuration: 24 * 3600, // 24 jam
+		InvoiceDuration:    24 * 3600, // 24 jam
 	}
 
 	body, _ := json.Marshal(reqBody)
@@ -92,11 +93,16 @@ func (s *Service) CreateXenditInvoice(tenantID, tagihanID int, nominal float64, 
 	defer resp.Body.Close()
 
 	var out XenditInvoiceRes
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("xendit: decode response gagal: %v", err)
-	}
+	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("xendit: HTTP %d — %+v", resp.StatusCode, out)
+		hint := string(raw)
+		if len(hint) > 500 {
+			hint = hint[:500]
+		}
+		return nil, fmt.Errorf("xendit: HTTP %d — %s", resp.StatusCode, hint)
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("xendit: decode response gagal: %v", err)
 	}
 	return &out, nil
 }
