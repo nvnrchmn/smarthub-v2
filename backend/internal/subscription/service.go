@@ -60,16 +60,16 @@ func (s *Service) CreateInvoice(idLayanan int, bulanTagihan string, jumlahRumah 
 	if err := s.db.First(&l, idLayanan).Error; err != nil {
 		return nil, err
 	}
-	
+
 	total := float64(jumlahRumah) * l.HargaPerBulan
 	inv := &model.Invoice{
-		IDLayanan:     idLayanan,
-		NomorInvoice:  "INV-" + time.Now().Format("20060102") + "-" + strconv.Itoa(idLayanan),
-		BulanTagihan:  bulanTagihan,
-		JumlahRumah:   jumlahRumah,
-		HargaPerRumah: l.HargaPerBulan,
-		TotalNominal:  total,
-		Status:        "PENDING",
+		IDLayanan:         idLayanan,
+		NomorInvoice:      "INV-" + time.Now().Format("20060102") + "-" + strconv.Itoa(idLayanan),
+		BulanTagihan:      bulanTagihan,
+		JumlahRumah:       jumlahRumah,
+		HargaPerRumah:     l.HargaPerBulan,
+		TotalNominal:      total,
+		Status:            "PENDING",
 		TanggalJatuhTempo: time.Now().AddDate(0, 0, 7).Format("2006-01-02"),
 	}
 	err := s.db.Create(inv).Error
@@ -80,9 +80,9 @@ func (s *Service) CreateInvoice(idLayanan int, bulanTagihan string, jumlahRumah 
 func (s *Service) PayInvoice(id int, metode string) error {
 	now := time.Now()
 	return s.db.Model(&model.Invoice{}).Where("id_invoice = ?", id).Updates(map[string]interface{}{
-		"status":         "PAID",
-		"tanggal_bayar":  now.Format("2006-01-02"),
-		"metode_bayar":   metode,
+		"status":        "PAID",
+		"tanggal_bayar": now.Format("2006-01-02"),
+		"metode_bayar":  metode,
 	}).Error
 }
 
@@ -105,10 +105,37 @@ func (s *Service) ListAllInvoices() ([]InvoiceWithTenant, error) {
 	return list, err
 }
 
-type InvoiceWithTenant struct {
-	model.Invoice
-	TenantNama string `json:"tenant_nama"`
-	IDRumah    int    `json:"id_rumah"`
+// GenerateMonthlyInvoices auto-creates invoices for all active layanan
+func (s *Service) GenerateMonthlyInvoices() (int, error) {
+	var layanans []model.Layanan
+	if err := s.db.Where("status = ?", "AKTIF").Find(&layanans).Error; err != nil {
+		return 0, err
+	}
+	now := time.Now()
+	bulanTagihan := now.Format("2006-01")
+	created := 0
+	for _, l := range layanans {
+		var count int64
+		s.db.Model(&model.Invoice{}).Where("id_layanan = ? AND bulan_tagihan = ?", l.IDLayanan, bulanTagihan).Count(&count)
+		if count > 0 {
+			continue
+		}
+		inv := &model.Invoice{
+			IDLayanan:         l.IDLayanan,
+			NomorInvoice:      "INV-" + now.Format("20060102") + "-" + strconv.Itoa(l.IDLayanan),
+			BulanTagihan:      bulanTagihan,
+			JumlahRumah:       1,
+			HargaPerRumah:     l.HargaPerBulan,
+			TotalNominal:      l.HargaPerBulan,
+			Status:            "PENDING",
+			TanggalJatuhTempo: now.AddDate(0, 0, 7).Format("2006-01-02"),
+		}
+		if err := s.db.Create(inv).Error; err != nil {
+			continue
+		}
+		created++
+	}
+	return created, nil
 }
 
 // Summary returns super admin summary
@@ -117,14 +144,20 @@ func (s *Service) Summary() (map[string]interface{}, error) {
 	s.db.Model(&model.Layanan{}).Count(&totalLayanan)
 	s.db.Model(&model.Layanan{}).Where("status = ?", "AKTIF").Count(&aktif)
 	s.db.Model(&model.Layanan{}).Where("status = ?", "SUSPENDED").Count(&suspended)
-	
+
 	var totalRevenue float64
 	s.db.Model(&model.Invoice{}).Where("status = ?", "PAID").Select("COALESCE(SUM(total_nominal),0)").Scan(&totalRevenue)
-	
+
 	return map[string]interface{}{
-		"total_layanan":   totalLayanan,
-		"aktif":           aktif,
-		"suspended":       suspended,
-		"total_revenue":   totalRevenue,
+		"total_layanan": totalLayanan,
+		"aktif":         aktif,
+		"suspended":     suspended,
+		"total_revenue": totalRevenue,
 	}, nil
+}
+
+type InvoiceWithTenant struct {
+	model.Invoice
+	TenantNama string `json:"tenant_nama"`
+	IDRumah    int    `json:"id_rumah"`
 }

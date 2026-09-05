@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nvnrchmn/smarthub-v2/internal/model"
+	"github.com/nvnrchmn/smarthub-v2/internal/subscription"
 	"github.com/nvnrchmn/smarthub-v2/pkg/encryption"
 	"github.com/nvnrchmn/smarthub-v2/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
@@ -18,10 +19,15 @@ type Service struct {
 	repo   *Repository
 	jwt    *jwt.JWT
 	aes    *encryption.AES
+	sub    *subscription.Service
 }
 
 func NewService(repo *Repository, j *jwt.JWT, a *encryption.AES) *Service {
 	return &Service{repo: repo, jwt: j, aes: a}
+}
+
+func (s *Service) SetSubscriptionService(sub *subscription.Service) {
+	s.sub = sub
 }
 
 type LoginInput struct {
@@ -76,7 +82,6 @@ func (s *Service) Login(input LoginInput) (*LoginResponse, error) {
 		return nil, errors.New("akun tidak ditemukan")
 	}
 
-	// Verify password
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password))
 	if err != nil {
 		return nil, errors.New("password salah")
@@ -94,13 +99,11 @@ func (s *Service) Login(input LoginInput) (*LoginResponse, error) {
 		UserID:   user.ID,
 	}
 
-	// Jika ketua_rt, generate invite code otomatis
 	if user.Role == "ketua_rt" {
 		codes, err := s.repo.ListInviteCodesByTenant(user.TenantID)
 		if err == nil && len(codes) > 0 {
 			resp.InviteCode = codes[0].Code
 		} else {
-			// Buat invite code baru
 			code := generateRandomCode(8)
 			expiresAt := time.Now().Add(30 * 24 * time.Hour)
 			_ = s.repo.CreateInviteCode(&model.InviteCode{
@@ -121,7 +124,7 @@ func (s *Service) Register(input RegisterInput) (*LoginResponse, error) {
 	return s.RegisterWithInvite(input, "")
 }
 
-func (s *Service) RegisterPengurus(input RegisterPengurusInput, requireVerification bool) (*LoginResponse, error) {
+func (s *Service) RegisterPengurus(input RegisterPengurusInput) (*LoginResponse, error) {
 	if matched, _ := regexp.MatchString(`^08\d{8,13}$`, input.NomorWA); !matched {
 		return nil, errors.New("nomor WA tidak valid")
 	}
@@ -132,7 +135,6 @@ func (s *Service) RegisterPengurus(input RegisterPengurusInput, requireVerificat
 		return nil, errors.New("nama RT/RW wajib diisi")
 	}
 
-	// Cek apakah nomor WA sudah terdaftar
 	existing, err := s.repo.GetUserByNomorWA(input.NomorWA)
 	if err != nil {
 		return nil, err
@@ -141,19 +143,17 @@ func (s *Service) RegisterPengurus(input RegisterPengurusInput, requireVerificat
 		return nil, errors.New("nomor WA sudah terdaftar")
 	}
 
-	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	// Buat tenant baru
 	tenant := &model.Tenant{
-		NamaRTRW:      input.NamaRT,
-		DesaKelurahan: input.DesaKelurahan,
-		Kecamatan:     input.Kecamatan,
-		KabupatenKota: input.KabupatenKota,
-		Provinsi:      input.Provinsi,
+		NamaRTRW:         input.NamaRT,
+		DesaKelurahan:    input.DesaKelurahan,
+		Kecamatan:        input.Kecamatan,
+		KabupatenKota:    input.KabupatenKota,
+		Provinsi:         input.Provinsi,
 		StatusBerlanggan: "AKTIF",
 	}
 
@@ -163,7 +163,11 @@ func (s *Service) RegisterPengurus(input RegisterPengurusInput, requireVerificat
 		return nil, err
 	}
 
-	// Generate default invite code untuk tenant ini
+	// Create subscription for tenant (per-rumah Rp 3.000, default 1 rumah)
+	if s.sub != nil {
+		_, _ = s.sub.CreateLayanan(tenant.ID, 1, 3000)
+	}
+
 	inviteCode := generateRandomCode(8)
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
 	_ = s.repo.CreateInviteCode(&model.InviteCode{
@@ -196,7 +200,6 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		return nil, errors.New("password minimal 6 karakter")
 	}
 
-	// Cek apakah nomor WA sudah terdaftar
 	existing, err := s.repo.GetUserByNomorWA(input.NomorWA)
 	if err != nil {
 		return nil, err
@@ -205,7 +208,6 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		return nil, errors.New("nomor WA sudah terdaftar")
 	}
 
-	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -215,7 +217,6 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 	role := "warga"
 
 	if inviteCode != "" {
-		// Validasi invite code
 		code, err := s.repo.GetInviteCode(inviteCode)
 		if err != nil {
 			return nil, errors.New("kode undangan tidak valid atau sudah kadaluarsa")
@@ -230,12 +231,10 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		tenantID = code.TenantID
 		role = code.RoleFor
 
-		// Tandai code sudah digunakan
 		now := time.Now()
 		code.UsedAt = &now
 		_ = s.repo.UpdateInviteCode(code)
 	} else {
-		// Tanpa invite code — buat tenant baru otomatis (warga mandiri)
 		tenant := &model.Tenant{
 			NamaRTRW:         "RT Baru",
 			StatusBerlanggan: "AKTIF",
@@ -265,22 +264,6 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 	}, nil
 }
 
-// ApproveWarga mengaktifkan user yang statusnya pending_verifikasi
-func (s *Service) ApproveWarga(tenantID int, userID int) error {
-	return s.repo.ApproveWarga(tenantID, userID)
-}
-
-// RejectWarga menolak dan mensuspend user
-func (s *Service) RejectWarga(tenantID int, userID int) error {
-	return s.repo.RejectWarga(tenantID, userID)
-}
-
-// ListWargaPending mengambil list user yg statusnya pending_verifikasi
-func (s *Service) ListWargaPending(tenantID int) ([]model.User, error) {
-	return s.repo.ListWargaPending(tenantID)
-}
-
-// GenerateInviteCode membuat kode undangan baru
 func (s *Service) GenerateInviteCode(tenantID int, createdBy int, roleFor string, maxUses *int, expiresAt *time.Time) (string, error) {
 	code := generateRandomCode(8)
 
@@ -298,4 +281,16 @@ func (s *Service) GenerateInviteCode(tenantID int, createdBy int, roleFor string
 	}
 
 	return code, nil
+}
+
+func (s *Service) ApproveWarga(tenantID int, userID int) error {
+	return s.repo.ApproveWarga(tenantID, userID)
+}
+
+func (s *Service) RejectWarga(tenantID int, userID int) error {
+	return s.repo.RejectWarga(tenantID, userID)
+}
+
+func (s *Service) ListWargaPending(tenantID int) ([]model.User, error) {
+	return s.repo.ListWargaPending(tenantID)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/internal/admin"
 	"github.com/nvnrchmn/smarthub-v2/internal/auth"
 	"github.com/nvnrchmn/smarthub-v2/internal/cms"
+	"github.com/nvnrchmn/smarthub-v2/internal/cron"
 	"github.com/nvnrchmn/smarthub-v2/internal/forum"
 	"github.com/nvnrchmn/smarthub-v2/internal/keuangan"
 	"github.com/nvnrchmn/smarthub-v2/internal/lapak"
@@ -33,8 +34,16 @@ func main() {
 	enc := encryption.NewAES()
 	settingsStore := settings.New(db.SQL, enc)
 
+	// Subscription
+	subscriptionService := subscription.NewService(db.SQL)
+
+	// Cron (auto-generate invoice)
+	cron.StartInvoiceCron(subscriptionService)
+
+	// Auth
 	authRepo := auth.NewRepository(db.SQL)
 	authService := auth.NewService(authRepo, j, enc)
+	authService.SetSubscriptionService(subscriptionService)
 	authHandler := auth.NewHandler(authService)
 
 	wilayahRepo := wilayah.NewRepository(db.SQL)
@@ -46,7 +55,7 @@ func main() {
 	wargaHandler := warga.NewHandler(wargaService)
 
 	app := fiber.New(fiber.Config{
-		BodyLimit: 15 << 20, // izinkan upload foto s/d ~8MB + multipart overhead
+		BodyLimit: 15 << 20,
 		ErrorHandler: func(c fiber.Ctx, err error) error {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		},
@@ -126,7 +135,6 @@ func main() {
 	cmsHandler.RegisterRoute(app, mw)
 
 	// Subscription
-	subscriptionService := subscription.NewService(db.SQL)
 	subscriptionHandler := subscription.NewHandler(subscriptionService)
 	subscriptionHandler.RegisterRoute(app, mw)
 

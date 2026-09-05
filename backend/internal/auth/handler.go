@@ -80,7 +80,7 @@ func (h *Handler) RegisterPengurus(c fiber.Ctx) error {
 		Provinsi:      req.Provinsi,
 	}
 
-	res, err := h.service.RegisterPengurus(input, false)
+	res, err := h.service.RegisterPengurus(input)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
