@@ -13,6 +13,7 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/internal/lapak"
 	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
 	"github.com/nvnrchmn/smarthub-v2/internal/notifikasi"
+	"github.com/nvnrchmn/smarthub-v2/internal/settlement"
 	"github.com/nvnrchmn/smarthub-v2/internal/upload"
 	"github.com/nvnrchmn/smarthub-v2/internal/warga"
 	"github.com/nvnrchmn/smarthub-v2/internal/wilayah"
@@ -111,6 +112,11 @@ func main() {
 	adminRepo := admin.NewRepository(db.SQL)
 	adminHandler := admin.NewHandler(adminRepo, settingsStore)
 	adminHandler.RegisterRoute(app, mw)
+
+	// Settlement
+	settlementService := settlement.NewService(db.SQL)
+	settlementHandler := settlement.NewHandler(settlementService)
+	settlementHandler.RegisterRoute(app, mw)
 
 	// Notifikasi @mention
 	notifRepo := notifikasi.NewRepository(db.SQL)

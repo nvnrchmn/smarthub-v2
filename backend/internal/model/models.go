@@ -17,15 +17,20 @@ type User struct {
 }
 
 type Tenant struct {
-	ID               int       `gorm:"column:id_tenant;type:int;primaryKey;autoIncrement"`
-	NamaRTRW         string    `gorm:"column:nama_rt_rw;size:100;not null"`
-	DesaKelurahan    string    `gorm:"column:desa_kelurahan;size:100"`
-	Kecamatan        string    `gorm:"column:kecamatan;size:100"`
-	KabupatenKota    string    `gorm:"column:kabupaten_kota;size:100"`
-	Provinsi         string    `gorm:"column:provinsi;size:100"`
-	XenditSubID      string    `gorm:"column:xendit_sub_account_id;size:100"`
-	XenditKYCStatus  string    `gorm:"column:xendit_kyc_status;size:30;default:PENDING"`
-	StatusBerlanggan string    `gorm:"column:status_berlangganan;size:20;default:AKTIF"`
-	CreatedAt        time.Time `gorm:"column:created_at"`
-	UpdatedAt        time.Time `gorm:"column:updated_at"`
+	ID                int       `gorm:"column:id_tenant;type:int;primaryKey;autoIncrement"`
+	NamaRTRW          string    `gorm:"column:nama_rt_rw;size:100;not null"`
+	DesaKelurahan     string    `gorm:"column:desa_kelurahan;size:100"`
+	Kecamatan         string    `gorm:"column:kecamatan;size:100"`
+	KabupatenKota     string    `gorm:"column:kabupaten_kota;size:100"`
+	Provinsi          string    `gorm:"column:provinsi;size:100"`
+	NamaPemilikRekening string  `gorm:"column:nama_pemilik_rekening;size:155"`
+	BankCode          string    `gorm:"column:bank_code;size:20"`
+	NomorRekening     string    `gorm:"column:nomor_rekening;size:50"`
+	KTPUrl            string    `gorm:"column:ktp_url;size:255"`
+	KTPVerified       bool      `gorm:"column:ktp_verified;default:false"`
+	XenditSubID       string    `gorm:"column:xendit_sub_account_id;size:100"`
+	XenditKYCStatus   string    `gorm:"column:xendit_kyc_status;size:30;default:PENDING"`
+	StatusBerlanggan  string    `gorm:"column:status_berlangganan;size:20;default:AKTIF"`
+	CreatedAt         time.Time `gorm:"column:created_at"`
+	UpdatedAt         time.Time `gorm:"column:updated_at"`
 }

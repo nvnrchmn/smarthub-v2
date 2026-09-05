@@ -34,12 +34,14 @@ import { RTTagihanPage } from './pages/rt/TagihanPage'
 import { ForumRT } from './pages/rt/ForumRT'
 import { LapakRT } from './pages/rt/LapakRT'
 import { RTPengaturanPage } from './pages/rt/PengaturanPage'
+import { SettlementPage } from './pages/rt/SettlementPage'
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/Dashboard'
 import { TenantsPage } from './pages/admin/TenantsPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { SettingsPage } from './pages/admin/SettingsPage'
+import { AdminSettlementPage } from './pages/admin/SettlementPage'
 
 export default function App() {
   return (
@@ -77,6 +79,7 @@ export default function App() {
           <Route path="/rt/forum/:id" element={<ForumDetailPage />} />
           <Route path="/rt/lapak" element={<LapakRT />} />
           <Route path="/rt/pengaturan" element={<RTPengaturanPage />} />
+          <Route path="/rt/settlement" element={<SettlementPage />} />
         </Route>
 
         {/* Super Admin */}
@@ -85,6 +88,7 @@ export default function App() {
           <Route path="/admin/tenants" element={<TenantsPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/settings" element={<SettingsPage />} />
+          <Route path="/admin/settlement" element={<AdminSettlementPage />} />
         </Route>
 
         {/* Fallback */}
