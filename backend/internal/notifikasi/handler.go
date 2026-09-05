@@ -3,61 +3,71 @@ package notifikasi
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
-	"github.com/nvnrchmn/smarthub-v2/internal/model"
-	"gorm.io/gorm"
+	"mime/multipart"
+	"strconv"
 )
 
-type Repository struct {
-	db *gorm.DB
-}
-
-func NewRepository(db *gorm.DB) *Repository { return &Repository{db: db} }
-
-func (r *Repository) ListByUser(userID int) ([]model.Notifikasi, error) {
-	var list []model.Notifikasi
-	err := r.db.Where("id_user = ?", userID).Order("created_at DESC").Limit(50).Find(&list).Error
-	return list, err
-}
-
-func (r *Repository) CountUnread(userID int) (int, error) {
-	var n int64
-	err := r.db.Model(&model.Notifikasi{}).Where("id_user = ? AND is_read = 0", userID).Count(&n).Error
-	return int(n), err
-}
-
-func (r *Repository) MarkAllRead(userID int) error {
-	return r.db.Model(&model.Notifikasi{}).Where("id_user = ?", userID).Update("is_read", true).Error
-}
-
 type Handler struct {
-	repo *Repository
+	service *Service
 }
 
-func NewHandler(repo *Repository) *Handler { return &Handler{repo: repo} }
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
+}
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/notifikasi")
 	r.Use(mw.AuthRequired)
 	r.Get("/", h.List)
 	r.Put("/read-all", h.ReadAll)
+	r.Put("/:id/read", h.MarkRead)
+	r.Post("/upload-ktp", h.UploadKTP)
 }
 
 func (h *Handler) List(c fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
-	list, err := h.repo.ListByUser(userID)
+	list, err := h.service.ListByUser(userID)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(500).JSON(fiber.Map{"error": "gagal memuat notifikasi"})
 	}
-	unread, _ := h.repo.CountUnread(userID)
+	unread, _ := h.service.CountUnread(userID)
 	return c.JSON(fiber.Map{"list": list, "unread": unread})
 }
 
 func (h *Handler) ReadAll(c fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
-	if err := h.repo.MarkAllRead(userID); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	if err := h.service.MarkAllRead(userID); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal menandai dibaca"})
 	}
-	return c.JSON(fiber.Map{"message": "dibaca"})
+	return c.JSON(fiber.Map{"message": "semua notifikasi ditandai dibaca"})
 }
 
-// var _ = strings.TrimSpace
+func (h *Handler) MarkRead(c fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tidak valid"})
+	}
+	if err := h.service.MarkRead(id); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal menandai dibaca"})
+	}
+	return c.JSON(fiber.Map{"message": "notifikasi ditandai dibaca"})
+}
+
+func (h *Handler) UploadKTP(c fiber.Ctx) error {
+	tenantID := c.Locals("tenant_id").(int)
+	
+	file, err := c.FormFile("ktp")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "file KTP wajib diupload"})
+	}
+	
+	url, err := UploadKTP(file, tenantID)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	
+	return c.JSON(fiber.Map{"message": "KTP berhasil diupload", "url": url})
+}
+
+var _ = (*multipart.FileHeader)(nil)

@@ -119,8 +119,8 @@ func main() {
 	settlementHandler.RegisterRoute(app, mw)
 
 	// Notifikasi @mention
-	notifRepo := notifikasi.NewRepository(db.SQL)
-	notifHandler := notifikasi.NewHandler(notifRepo)
+	notifService := notifikasi.NewService(db.SQL)
+	notifHandler := notifikasi.NewHandler(notifService)
 	notifHandler.RegisterRoute(app, mw)
 
 	// Upload foto produk (tersimpan di webroot /uploads)
