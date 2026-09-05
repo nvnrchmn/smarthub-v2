@@ -93,3 +93,11 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 - Warga: Beranda, Tagihan, Forum, Lapak, Lainnya → Pengaturan
 - RT: Dashboard, Warga, Tagihan, Settlement, Lainnya → Langganan + Pengaturan
 - Admin: Dashboard, Tenants, Settlement, Subscription, Lainnya → CMS + Audit + Broadcast + Users + Pengaturan
+
+## 📋 AUDIT SaaS 2026-09-05 (lihat /tmp/audit_backend.md + /tmp/audit_frontend.md)
+- ✅ FIXED 2026-09-05: JWT_SECRET di-rotate (64 hex random, env file 600) + jwt.go fail-fast tanpa fallback; token lama invalid (semua user logout). RBAC invite whitelist (ketua_rt→warga saja; super_admin→warga/ketua_rt; warga dilarang) + guard kode legacy di register-invite. PasswordHash kini json:"-". Terverifikasi E2E.
+- 🚨 CRITICAL: eskalasi warga→super_admin via POST /auth/invite-codes (main.go:87 cuma AuthRequired; role_for tanpa whitelist service.go:267-284; register-invite pakai role dari kode service.go:232; token terbit walau status pending_verifikasi — middleware auth tak cek status).
+- 🚨 CRITICAL: bcrypt hash bocor via GET /admin/users (model.User tanpa json tag → c.JSON(users) serialize PasswordHash).
+- HIGH: rate limiter 100/min in-memory tanpa TrustProxy → semua user 1 bucket 127.0.0.1; unknown route → 500 (ErrorHandler main.go:59-61 override); build rusak: blacklist.go panggil parseBearer undefined; password min 6 karakter; uang pakai float64; webhook mark PAID tanpa cek nominal; admin ListUsers ambil semua kolom.
+- HIGH frontend: JWT+profil di localStorage (tanpa httpOnly/refresh); GabungRTPage simpan token di kunci 'access_token' ≠ 'token' yang dibaca api.ts; tanpa handling 401/redirect; tanpa timeout/abort.
+- TINDAKAN SEGERA: rotate JWT_SECRET + tambah validasi role_for invite + json:"-" di PasswordHash + bereskan parseBearer.

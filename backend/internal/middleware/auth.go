@@ -22,6 +22,16 @@ var (
 	errBadToken   = errors.New("token tidak valid")
 )
 
+// parseBearer mengekstrak token dari header "Authorization: Bearer <token>";
+// mengembalikan "" jika format salah. Dipakai BlacklistCheck (blacklist.go).
+func parseBearer(auth string) string {
+	parts := strings.Split(auth, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return ""
+	}
+	return parts[1]
+}
+
 // resolve memvalidasi token & mengisi locals. TANPA c.Next() — aman dipanggil
 // dari middleware lain (mencegah double-Next & race di role check).
 // Mengembalikan error SENTINEL saat gagal; caller (AuthRequired/RoleRequired)

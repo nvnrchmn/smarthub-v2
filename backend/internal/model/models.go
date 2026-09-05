@@ -6,7 +6,7 @@ type User struct {
 	ID           int       `gorm:"column:id_user;type:int;primaryKey;autoIncrement"`
 	TenantID     int       `gorm:"column:id_tenant;type:int;not null"`
 	NomorWA      string    `gorm:"column:nomor_wa;size:20;not null;uniqueIndex"`
-	PasswordHash string    `gorm:"column:password_hash;not null"`
+	PasswordHash string    `json:"-" gorm:"column:password_hash;not null"` // json:"-" → audit 2026-09-05: bcrypt hash pernah bocor via GET /admin/users
 	NamaLengkap  string    `gorm:"column:nama_lengkap;size:155;not null;default:''"`
 	Role         string    `gorm:"column:role;size:30;not null;default:warga"`
 	TokenFCM     string    `gorm:"column:fcm_token_pwa;size:255"`

@@ -142,9 +142,27 @@ func (h *Handler) GenerateInviteCode(c fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
 
-	// Get tenant_id and user_id from JWT
+	// Get tenant_id, user_id, dan role dari JWT
 	tenantID := c.Locals("tenant_id").(int)
 	userID := c.Locals("user_id").(int)
+	callerRole, _ := c.Locals("role").(string)
+
+	// RBAC whitelist (audit 2026-09-05): sebelumnya siapa pun yang login
+	// (termasuk warga) bisa membuat kode dengan role_for bebas → eskalasi ke
+	// super_admin. Sekarang: warga tidak boleh membuat kode sama sekali;
+	// ketua_rt hanya warga; super_admin hanya warga/ketua_rt (BUKAN super_admin).
+	switch callerRole {
+	case "ketua_rt":
+		if req.RoleFor != "warga" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "ketua_rt hanya bisa mengundang warga"})
+		}
+	case "super_admin":
+		if req.RoleFor != "warga" && req.RoleFor != "ketua_rt" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "role_for tidak diizinkan"})
+		}
+	default:
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "tidak diizinkan membuat kode undangan"})
+	}
 
 	code, err := h.service.GenerateInviteCode(tenantID, userID, req.RoleFor, req.MaxUses, req.ExpiresAt)
 	if err != nil {

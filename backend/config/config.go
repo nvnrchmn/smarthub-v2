@@ -32,7 +32,7 @@ func Load() *Config {
 		DBName:     getEnv("DB_NAME", "smarthub_v2"),
 		RedisAddr:  getEnv("REDIS_ADDR", "127.0.0.1:6379"),
 		RedisPass:  getEnv("REDIS_PASS", ""),
-		JWTSecret:  getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTSecret:  getEnv("JWT_SECRET", ""), // audit 2026-09-05: fallback publik dihapus — jwt.go fail-fast jika kosong
 		ServerPort: getEnv("PORT", "8082"),
 		UploadDir:  getEnv("UPLOAD_DIR", ""),
 	}

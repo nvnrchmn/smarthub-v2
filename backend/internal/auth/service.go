@@ -231,6 +231,12 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		tenantID = code.TenantID
 		role = code.RoleFor
 
+		// Whitelist (audit 2026-09-05): kode legacy yang dibuat SEBELUM fix
+		// (role_for="super_admin" dll) ditolak saat ditukar — defense in depth.
+		if role != "warga" && role != "ketua_rt" {
+			return nil, errors.New("kode undangan tidak valid")
+		}
+
 		now := time.Now()
 		code.UsedAt = &now
 		_ = s.repo.UpdateInviteCode(code)

@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -19,10 +20,20 @@ type JWT struct {
 	secret []byte
 }
 
+// Fail-fast (audit 2026-09-05): JWT_SECRET tidak boleh kosong, memakai nilai
+// default yang pernah publik, atau terlalu pendek. Sebelumnya ada fallback
+// hardcoded ("default-jwt-secret-change-me-in-prod" / config.go
+// "change-me-in-production") sehingga siapa pun bisa forge token super_admin.
 func NewJWT() *JWT {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "default-jwt-secret-change-me-in-prod"
+		log.Fatal("JWT_SECRET wajib di-set — menolak start dengan secret kosong (generate: openssl rand -hex 32)")
+	}
+	if secret == "default-jwt-secret-change-me-in-prod" || secret == "change-me-in-production" {
+		log.Fatal("JWT_SECRET masih memakai nilai default publik — generate baru: openssl rand -hex 32")
+	}
+	if len(secret) < 32 {
+		log.Fatal("JWT_SECRET terlalu pendek (< 32 karakter) — generate baru: openssl rand -hex 32")
 	}
 	return &JWT{secret: []byte(secret)}
 }
