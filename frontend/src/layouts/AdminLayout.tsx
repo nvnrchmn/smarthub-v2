@@ -28,7 +28,7 @@ export function AdminLayout() {
           })}
         </nav>
       </aside>
-      <main key={pathname} className="page-enter flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
+      <main key={pathname} className={cn("page-enter flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6", "pb-24")}>
         <Outlet />
       </main>
       <BottomBar links={adminLinks} />
