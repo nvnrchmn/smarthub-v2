@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
 import { Skeleton } from '../../components/ui/bento'
 
@@ -22,7 +22,7 @@ export function AdminCMSPage() {
     }
   }
 
-  useState(() => { load() })
+  useEffect(() => { load() }, [])
 
   const updateField = (path: string, value: any) => {
     const newSections = { ...sections }
@@ -54,66 +54,12 @@ export function AdminCMSPage() {
   }
 
   const sectionNames: Record<string, string> = {
-    hero: 'Hero Section',
+    hero: 'Hero',
     features: 'Fitur',
     pricing: 'Harga',
     faq: 'FAQ',
     testimonials: 'Testimoni',
     footer: 'Footer'
-  }
-
-  const renderField = (label: string, path: string, type: 'text' | 'textarea' | 'html' = 'text') => {
-    const value = path.split('.').reduce((obj, key) => obj?.[key], sections[activeSection]) || ''
-    
-    if (type === 'textarea') {
-      return (
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
-          <textarea
-            value={value}
-            onChange={(e) => updateField(path, e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-        </div>
-      )
-    }
-    
-    if (type === 'html') {
-      return (
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <div className="flex gap-1 p-2 bg-surface-card border-b border-border">
-              <button type="button" className="px-2 py-1 text-xs rounded hover:bg-text-disabled/10 font-bold">B</button>
-              <button type="button" className="px-2 py-1 text-xs rounded hover:bg-text-disabled/10 italic">I</button>
-              <button type="button" className="px-2 py-1 text-xs rounded hover:bg-text-disabled/10 underline">U</button>
-              <button type="button" className="px-2 py-1 text-xs rounded hover:bg-text-disabled/10">H1</button>
-              <button type="button" className="px-2 py-1 text-xs rounded hover:bg-text-disabled/10">H2</button>
-              <button type="button" className="px-2 py-1 text-xs rounded hover:bg-text-disabled/10">•</button>
-            </div>
-            <textarea
-              value={value}
-              onChange={(e) => updateField(path, e.target.value)}
-              rows={4}
-              className="w-full bg-surface px-3 py-2 text-sm focus:outline-none"
-            />
-          </div>
-        </div>
-      )
-    }
-    
-    return (
-      <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => updateField(path, e.target.value)}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary"
-        />
-      </div>
-    )
   }
 
   if (loading) return <Skeleton className="h-96" />
@@ -122,211 +68,376 @@ export function AdminCMSPage() {
     <div className="mx-auto max-w-6xl">
       <header className="mb-6">
         <h1 className="text-xl font-bold text-text-primary">CMS Landing Page</h1>
-        <p className="text-sm text-text-secondary">Edit konten halaman publik</p>
+        <p className="text-sm text-text-secondary">Edit konten landing page</p>
       </header>
 
-      {error && <div className="mb-4 rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</div>}
-      {success && <div className="mb-4 rounded-lg bg-success/10 p-3 text-sm text-success">{success}</div>}
+      {error && (
+        <div className="mb-4 rounded-xl bg-danger/10 p-4 text-sm text-danger">
+          {error}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {success && (
+        <div className="mb-4 rounded-xl bg-success/10 p-4 text-sm text-success">
+          {success}
+        </div>
+      )}
+
+      <div className="grid gap-6 md:grid-cols-[200px_1fr]">
         {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="rounded-xl border border-border bg-surface-card p-2">
-            {Object.keys(sectionNames).map((key) => (
-              <button
-                key={key}
-                onClick={() => setActiveSection(key)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  activeSection === key ? 'bg-primary text-white' : 'text-text-secondary hover:bg-text-disabled/10'
-                }`}
-              >
-                {sectionNames[key]}
-              </button>
-            ))}
-          </div>
+        <div className="space-y-1">
+          {Object.keys(sectionNames).map(key => (
+            <button
+              key={key}
+              onClick={() => setActiveSection(key)}
+              className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                activeSection === key
+                  ? 'bg-primary font-medium text-white'
+                  : 'text-text-secondary hover:bg-text-disabled/10'
+              }`}
+            >
+              {sectionNames[key]}
+            </button>
+          ))}
         </div>
 
         {/* Editor */}
-        <div className="lg:col-span-3">
-          <div className="rounded-xl border border-border bg-surface-card p-6">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">{sectionNames[activeSection]}</h2>
+        <div className="rounded-2xl border border-border bg-surface-card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-text-primary">
+            {sectionNames[activeSection]}
+          </h2>
 
-            {activeSection === 'hero' && (
-              <div className="space-y-4">
-                {renderField('Badge', 'badge')}
-                {renderField('Judul', 'title', 'html')}
-                {renderField('Sub Judul', 'subtitle', 'textarea')}
-                {renderField('CTA Primary Text', 'cta_primary')}
-                {renderField('CTA Primary URL', 'cta_primary_url')}
-                {renderField('CTA Secondary Text', 'cta_second')}
-                {renderField('CTA Secondary URL', 'cta_second_url')}
+          {activeSection === 'hero' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Badge</label>
+                <input
+                  type="text"
+                  value={sections.hero?.badge || ''}
+                  onChange={e => updateField('badge', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
               </div>
-            )}
-
-            {activeSection === 'features' && (
-              <div className="space-y-4">
-                {renderField('Judul Section', 'title')}
-                {renderField('Sub Judul', 'subtitle', 'textarea')}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Title</label>
+                <input
+                  type="text"
+                  value={sections.hero?.title || ''}
+                  onChange={e => updateField('title', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Subtitle</label>
+                <textarea
+                  value={sections.hero?.subtitle || ''}
+                  onChange={e => updateField('subtitle', e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Items</label>
-                  {(sections.features?.items || []).map((item: any, idx: number) => (
-                    <div key={idx} className="mb-3 p-3 rounded-lg border border-border bg-surface">
-                      <div className="grid grid-cols-3 gap-2">
-                        <input
-                          placeholder="Icon"
-                          value={item.icon}
-                          onChange={(e) => {
-                            const newItems = [...sections.features.items]
-                            newItems[idx] = { ...newItems[idx], icon: e.target.value }
-                            updateField('items', newItems)
-                          }}
-                          className="rounded border border-border bg-surface px-2 py-1 text-sm"
-                        />
-                        <input
-                          placeholder="Judul"
-                          value={item.title}
-                          onChange={(e) => {
-                            const newItems = [...sections.features.items]
-                            newItems[idx] = { ...newItems[idx], title: e.target.value }
-                            updateField('items', newItems)
-                          }}
-                          className="rounded border border-border bg-surface px-2 py-1 text-sm"
-                        />
-                        <input
-                          placeholder="Deskripsi"
-                          value={item.desc}
-                          onChange={(e) => {
-                            const newItems = [...sections.features.items]
-                            newItems[idx] = { ...newItems[idx], desc: e.target.value }
-                            updateField('items', newItems)
-                          }}
-                          className="rounded border border-border bg-surface px-2 py-1 text-sm"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">CTA Primary</label>
+                  <input
+                    type="text"
+                    value={sections.hero?.cta_primary || ''}
+                    onChange={e => updateField('cta_primary', e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">CTA Secondary</label>
+                  <input
+                    type="text"
+                    value={sections.hero?.cta_second || ''}
+                    onChange={e => updateField('cta_second', e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeSection === 'pricing' && (
-              <div className="space-y-4">
-                {renderField('Judul Section', 'title')}
-                {renderField('Sub Judul', 'subtitle', 'textarea')}
-                {(sections.pricing?.items || []).map((item: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-lg border border-border bg-surface space-y-2">
+          {activeSection === 'features' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Section Title</label>
+                <input
+                  type="text"
+                  value={sections.features?.title || ''}
+                  onChange={e => updateField('title', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Section Subtitle</label>
+                <input
+                  type="text"
+                  value={sections.features?.subtitle || ''}
+                  onChange={e => updateField('subtitle', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              {(sections.features?.items || []).map((item: any, idx: number) => (
+                <div key={idx} className="rounded-lg border border-border p-4">
+                  <p className="mb-2 text-sm font-medium">Feature {idx + 1}</p>
+                  <div className="grid grid-cols-2 gap-3">
                     <input
-                      placeholder="Nama Paket"
-                      value={item.name}
-                      onChange={(e) => {
+                      type="text"
+                      value={item.icon || ''}
+                      onChange={e => {
+                        const newItems = [...sections.features.items]
+                        newItems[idx] = { ...newItems[idx], icon: e.target.value }
+                        updateField('items', newItems)
+                      }}
+                      placeholder="Icon"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={item.title || ''}
+                      onChange={e => {
+                        const newItems = [...sections.features.items]
+                        newItems[idx] = { ...newItems[idx], title: e.target.value }
+                        updateField('items', newItems)
+                      }}
+                      placeholder="Title"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <textarea
+                    value={item.desc || ''}
+                    onChange={e => {
+                      const newItems = [...sections.features.items]
+                      newItems[idx] = { ...newItems[idx], desc: e.target.value }
+                      updateField('items', newItems)
+                    }}
+                    placeholder="Description"
+                    rows={2}
+                    className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeSection === 'pricing' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Section Title</label>
+                <input
+                  type="text"
+                  value={sections.pricing?.title || ''}
+                  onChange={e => updateField('title', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Section Subtitle</label>
+                <input
+                  type="text"
+                  value={sections.pricing?.subtitle || ''}
+                  onChange={e => updateField('subtitle', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              {(sections.pricing?.items || []).map((item: any, idx: number) => (
+                <div key={idx} className="rounded-lg border border-border p-4">
+                  <p className="mb-2 text-sm font-medium">Paket {idx + 1}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={item.name || ''}
+                      onChange={e => {
                         const newItems = [...sections.pricing.items]
                         newItems[idx] = { ...newItems[idx], name: e.target.value }
                         updateField('items', newItems)
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
+                      placeholder="Nama Paket"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
                     />
                     <input
-                      placeholder="Harga"
-                      value={item.price}
-                      onChange={(e) => {
+                      type="text"
+                      value={item.price || ''}
+                      onChange={e => {
                         const newItems = [...sections.pricing.items]
                         newItems[idx] = { ...newItems[idx], price: e.target.value }
                         updateField('items', newItems)
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
+                      placeholder="Harga"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
                     />
                   </div>
-                ))}
-              </div>
-            )}
-
-            {activeSection === 'faq' && (
-              <div className="space-y-4">
-                {renderField('Judul Section', 'title')}
-                {(sections.faq?.items || []).map((item: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-lg border border-border bg-surface space-y-2">
+                  <input
+                    type="text"
+                    value={item.unit || ''}
+                    onChange={e => {
+                      const newItems = [...sections.pricing.items]
+                      newItems[idx] = { ...newItems[idx], unit: e.target.value }
+                      updateField('items', newItems)
+                    }}
+                    placeholder="Unit (per rumah/bulan)"
+                    className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                  <textarea
+                    value={(item.features || []).join(', ')}
+                    onChange={e => {
+                      const newItems = [...sections.pricing.items]
+                      newItems[idx] = { ...newItems[idx], features: e.target.value.split(',').map((s: string) => s.trim()) }
+                      updateField('items', newItems)
+                    }}
+                    placeholder="Features (comma separated)"
+                    rows={2}
+                    className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                  <label className="mt-2 flex items-center gap-2">
                     <input
-                      placeholder="Pertanyaan"
-                      value={item.q}
-                      onChange={(e) => {
-                        const newItems = [...sections.faq.items]
-                        newItems[idx] = { ...newItems[idx], q: e.target.value }
+                      type="checkbox"
+                      checked={item.highlighted || false}
+                      onChange={e => {
+                        const newItems = [...sections.pricing.items]
+                        newItems[idx] = { ...newItems[idx], highlighted: e.target.checked }
                         updateField('items', newItems)
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
                     />
-                    <textarea
-                      placeholder="Jawaban"
-                      value={item.a}
-                      onChange={(e) => {
-                        const newItems = [...sections.faq.items]
-                        newItems[idx] = { ...newItems[idx], a: e.target.value }
-                        updateField('items', newItems)
-                      }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
-                      rows={2}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+                    <span className="text-sm">Highlighted</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
 
-            {activeSection === 'testimonials' && (
-              <div className="space-y-4">
-                {renderField('Judul Section', 'title')}
-                {(sections.testimonials?.items || []).map((item: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-lg border border-border bg-surface space-y-2">
+          {activeSection === 'faq' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Section Title</label>
+                <input
+                  type="text"
+                  value={sections.faq?.title || ''}
+                  onChange={e => updateField('title', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              {(sections.faq?.items || []).map((item: any, idx: number) => (
+                <div key={idx} className="rounded-lg border border-border p-4">
+                  <p className="mb-2 text-sm font-medium">FAQ {idx + 1}</p>
+                  <input
+                    type="text"
+                    value={item.q || ''}
+                    onChange={e => {
+                      const newItems = [...sections.faq.items]
+                      newItems[idx] = { ...newItems[idx], q: e.target.value }
+                      updateField('items', newItems)
+                    }}
+                    placeholder="Question"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                  <textarea
+                    value={item.a || ''}
+                    onChange={e => {
+                      const newItems = [...sections.faq.items]
+                      newItems[idx] = { ...newItems[idx], a: e.target.value }
+                      updateField('items', newItems)
+                    }}
+                    placeholder="Answer"
+                    rows={2}
+                    className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeSection === 'testimonials' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Section Title</label>
+                <input
+                  type="text"
+                  value={sections.testimonials?.title || ''}
+                  onChange={e => updateField('title', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              {(sections.testimonials?.items || []).map((item: any, idx: number) => (
+                <div key={idx} className="rounded-lg border border-border p-4">
+                  <p className="mb-2 text-sm font-medium">Testimoni {idx + 1}</p>
+                  <div className="grid grid-cols-2 gap-3">
                     <input
-                      placeholder="Nama"
-                      value={item.name}
-                      onChange={(e) => {
+                      type="text"
+                      value={item.name || ''}
+                      onChange={e => {
                         const newItems = [...sections.testimonials.items]
                         newItems[idx] = { ...newItems[idx], name: e.target.value }
                         updateField('items', newItems)
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
+                      placeholder="Name"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
                     />
                     <input
-                      placeholder="Role"
-                      value={item.role}
-                      onChange={(e) => {
+                      type="text"
+                      value={item.role || ''}
+                      onChange={e => {
                         const newItems = [...sections.testimonials.items]
                         newItems[idx] = { ...newItems[idx], role: e.target.value }
                         updateField('items', newItems)
                       }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
-                    />
-                    <textarea
-                      placeholder="Testimoni"
-                      value={item.text}
-                      onChange={(e) => {
-                        const newItems = [...sections.testimonials.items]
-                        newItems[idx] = { ...newItems[idx], text: e.target.value }
-                        updateField('items', newItems)
-                      }}
-                      className="w-full rounded border border-border bg-surface px-2 py-1 text-sm"
-                      rows={2}
+                      placeholder="Role"
+                      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm"
                     />
                   </div>
-                ))}
-              </div>
-            )}
-
-            {activeSection === 'footer' && (
-              <div className="space-y-4">
-                {renderField('Copyright', 'copyright', 'textarea')}
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={save}
-                disabled={saving}
-                className="rounded-xl bg-primary px-6 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
-              >
-                {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-              </button>
+                  <textarea
+                    value={item.text || ''}
+                    onChange={e => {
+                      const newItems = [...sections.testimonials.items]
+                      newItems[idx] = { ...newItems[idx], text: e.target.value }
+                      updateField('items', newItems)
+                    }}
+                    placeholder="Testimonial text"
+                    rows={3}
+                    className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                  />
+                </div>
+              ))}
             </div>
+          )}
+
+          {activeSection === 'footer' && (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Copyright</label>
+                <input
+                  type="text"
+                  value={sections.footer?.copyright || ''}
+                  onChange={e => updateField('copyright', e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-secondary">Links (JSON)</label>
+                <textarea
+                  value={JSON.stringify(sections.footer?.links || [], null, 2)}
+                  onChange={e => {
+                    try {
+                      updateField('links', JSON.parse(e.target.value))
+                    } catch {}
+                  }}
+                  rows={5}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 font-mono text-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </button>
           </div>
         </div>
       </div>
