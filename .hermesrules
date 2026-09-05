@@ -46,3 +46,50 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 - Restart: `sudo nginx -s reload` + `sudo systemctl restart smarthub` (atau kill + nohup)
 - File lama di web root harus dihapus sebelum copy baru (nama file hash berubah tiap build)
 - Service: `/usr/local/bin/smarthub-server` (systemd), port 8082, config `/etc/smarthub.env`
+
+## Features (2026-09-05 - sesi 4)
+
+### Settlement (Tagihan QRIS)
+- Alur: Warga bayar via QRIS → status PAID → Ketua RT request settlement → Super Admin approve/reject
+- Backend: `internal/settlement/` (service + handler), tabel `settlement_requests`, `settlement_tagihan`
+- Frontend: RT (`/rt/settlement`), Admin (`/admin/settlement`)
+- Xendit API: `TransferToBank` siap pakai (butuh `XENDIT_SECRET_KEY` & `XENDIT_DISBURSEMENT_ID` di env)
+- Endpoint: GET `/settlement/balance`, POST `/settlement/request`, GET `/settlements`, GET/POST `/admin/settlements/*`
+
+### Subscription Per-Rumah (Rp 3.000/rumah/bulan)
+- Model: 1 rumah = 1 langganan (bukan per-tenant)
+- Tabel: `layanan`, `invoice`
+- Backend: `internal/subscription/` (service + handler)
+- Frontend: RT (`/rt/langganan`), Admin (`/admin/subscription`)
+- Fitur lengkap otomatis aktif untuk rumah berlangganan
+- Endpoint: GET `/subscription/layanan`, POST `/subscription/request`, GET `/subscription/invoices`, GET `/admin/subscription/*`
+
+### CMS Landing Page
+- Semua section editable: Hero, Features, Pricing, FAQ, Testimonials, Footer
+- Backend: `internal/cms/` (service + handler), tabel `cms_landing` (JSON)
+- Frontend: Admin (`/admin/cms`) dengan rich text editor
+- Endpoint: GET `/cms/landing` (public), PUT `/admin/cms/:section` (super_admin)
+
+### Super Admin Features
+- Tenant Detail: `/admin/tenants/:id` (statistik lengkap tenant)
+- Analytics Dashboard: `/admin/analytics` (grafik revenue, pertumbuhan)
+- Audit Logs: `/admin/audit-logs` (tracking aktivitas user)
+- Broadcast: `/admin/broadcast` (kirim pengumuman ke user)
+- Audit Log juga dicatat otomatis di `audit_log` tabel
+
+### Notifikasi & KYC
+- In-app notification: `internal/notifikasi/` (service + handler), tabel `notifikasi`
+- WhatsApp notification: `SendWhatsApp` service (butuh WA Business API)
+- Upload KTP: `/notifikasi/upload-ktp` (KYC)
+- Frontend: `NotificationBell` component (auto-refresh 30 detik, badge unread)
+
+### Xendit Settings via Admin Panel
+- Super Admin bisa save `xendit_secret_key` & `xendit_webhook_token` di `/admin/settings`
+- Data disimpan terenkripsi AES-GCM di tabel `settings`
+- Endpoint: GET `/admin/settings` (status), POST `/admin/settings` (save)
+
+### Bottom Nav Pattern
+- Maksimal 4 menu + tombol "Lainnya" (drawer untuk menu tambahan)
+- Warga: Beranda, Tagihan, Forum, Lapak, Lainnya → Pengaturan
+- RT: Dashboard, Warga, Tagihan, Settlement, Lainnya → Langganan + Pengaturan
+- Admin: Dashboard, Tenants, Settlement, Subscription, Lainnya → CMS + Audit + Broadcast + Users + Pengaturan
