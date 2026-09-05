@@ -6,14 +6,16 @@ import (
 	"time"
 
 	"github.com/nvnrchmn/smarthub-v2/internal/model"
+	"github.com/nvnrchmn/smarthub-v2/pkg/settings"
 )
 
 type Service struct {
-	repo *Repository
+	repo     *Repository
+	settings *settings.Store
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, st *settings.Store) *Service {
+	return &Service{repo: repo, settings: st}
 }
 
 // GenerateTagihanBulk generates tagihan for all rumah in a tenant for a given period

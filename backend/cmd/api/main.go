@@ -17,6 +17,7 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/pkg/database"
 	"github.com/nvnrchmn/smarthub-v2/pkg/encryption"
 	"github.com/nvnrchmn/smarthub-v2/pkg/jwt"
+	"github.com/nvnrchmn/smarthub-v2/pkg/settings"
 )
 
 func main() {
@@ -25,6 +26,7 @@ func main() {
 
 	j := jwt.NewJWT()
 	enc := encryption.NewAES()
+	settingsStore := settings.New(db.SQL, enc)
 
 	authRepo := auth.NewRepository(db.SQL)
 	authService := auth.NewService(authRepo, j, enc)
@@ -76,7 +78,7 @@ func main() {
 
 	// Keuangan
 	keuanganRepo := keuangan.NewRepository(db.SQL)
-	keuanganService := keuangan.NewService(keuanganRepo)
+	keuanganService := keuangan.NewService(keuanganRepo, settingsStore)
 	keuanganHandler := keuangan.NewHandler(keuanganService)
 	keuanganHandler.RegisterRoute(app, mw)
 
@@ -94,7 +96,7 @@ func main() {
 
 	// Admin (super_admin only)
 	adminRepo := admin.NewRepository(db.SQL)
-	adminHandler := admin.NewHandler(adminRepo)
+	adminHandler := admin.NewHandler(adminRepo, settingsStore)
 	adminHandler.RegisterRoute(app, mw)
 
 	log.Printf("Smarthub v2 listening on :%s", cfg.ServerPort)

@@ -10,6 +10,26 @@ import (
 	"time"
 )
 
+// xenditSecret — secret dari DB setting (dikelola Super Admin), fallback env.
+func (s *Service) xenditSecret() string {
+	if s.settings != nil {
+		if v := s.settings.GetSecret("xendit_secret_key"); v != "" {
+			return v
+		}
+	}
+	return os.Getenv("XENDIT_SECRET_KEY")
+}
+
+// WebhookToken — token callback Xendit dari DB setting, fallback env.
+func (s *Service) WebhookToken() string {
+	if s.settings != nil {
+		if v := s.settings.GetSecret("xendit_webhook_token"); v != "" {
+			return v
+		}
+	}
+	return os.Getenv("XENDIT_WEBHOOK_TOKEN")
+}
+
 const xenditAPI = "https://api.xendit.co/v2/invoices"
 
 type XenditInvoiceReq struct {
@@ -35,9 +55,9 @@ type XenditInvoiceRes struct {
 // Jika tenant punya xendit_sub_account_id (XenPlatform), dana masuk sub-account
 // tenant (bukan custody Logikraf); jika kosong, invoice atas nama akun utama.
 func (s *Service) CreateXenditInvoice(tenantID, tagihanID int, nominal float64, desc, payerEmail, successURL string, forUserID string) (*XenditInvoiceRes, error) {
-	secret := os.Getenv("XENDIT_SECRET_KEY")
+	secret := s.xenditSecret()
 	if secret == "" {
-		return nil, fmt.Errorf("XENDIT_SECRET_KEY belum di-set")
+		return nil, fmt.Errorf("Xendit secret key belum di-set — isi di Pengaturan (Super Admin)")
 	}
 
 	extID := fmt.Sprintf("SHV2-%d-%d", tenantID, tagihanID)

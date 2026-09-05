@@ -113,8 +113,8 @@ func (h *Handler) GenerateTagihanRumah(c fiber.Ctx) error {
 }
 
 func (h *Handler) WebhookXendit(c fiber.Ctx) error {
-	// Validate X-Callback-Token
-	token := os.Getenv("XENDIT_WEBHOOK_TOKEN")
+	// Validate X-Callback-Token (setting DB dikelola Super Admin, fallback env)
+	token := h.service.WebhookToken()
 	if token != "" && c.Get("X-Callback-Token") != token {
 		return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
 	}
