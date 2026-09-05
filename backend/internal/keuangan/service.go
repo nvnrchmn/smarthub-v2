@@ -113,6 +113,29 @@ func (s *Service) GetTagihanByTenant(tenantID int, status string) ([]model.Tagih
 	return s.repo.GetTagihanByTenant(tenantID, status)
 }
 
+// TagihanDetail — detail tagihan + rincian item iuran. Warga biasa hanya boleh
+// melihat tagihan rumahnya sendiri; pengurus/super melihat semua.
+func (s *Service) TagihanDetail(tagihanID, tenantID, userID int, role string) (map[string]any, error) {
+	var tagihan model.TagihanIuran
+	if err := s.repo.db.Where("id_tagihan = ? AND id_tenant = ?", tagihanID, tenantID).First(&tagihan).Error; err != nil {
+		return nil, errors.New("tagihan tidak ditemukan")
+	}
+	if role != "ketua_rt" && role != "super_admin" {
+		var rumahID int
+		err := s.repo.db.Table("warga").Select("id_rumah").Where("id_user = ? AND id_tenant = ?", userID, tenantID).Scan(&rumahID).Error
+		if err != nil || rumahID != tagihan.RumahID {
+			return nil, errors.New("bukan tagihan untuk rumah kamu")
+		}
+	}
+	var rincian []model.DetailTagihan
+	_ = s.repo.db.Where("id_tagihan = ?", tagihanID).Order("id_detail ASC").Find(&rincian).Error
+	return map[string]any{
+		"tagihan": tagihan,
+		"rincian": rincian,
+		"metode":  "QRIS",
+	}, nil
+}
+
 func (s *Service) HandleWebhook(invID, status string) error {
 	var tagihan model.TagihanIuran
 	if err := s.repo.db.Where("xendit_invoice_id = ?", invID).First(&tagihan).Error; err != nil {
@@ -171,6 +194,12 @@ func (s *Service) BayarTagihan(tagihanID, userID, tenantID int, payerEmail, succ
 	}
 	if tagihan.StatusBayar == "PAID" {
 		return "", errors.New("tagihan sudah lunas")
+	}
+	// Invoice yang kedaluwarsa tidak bisa dipakai ulang — reset agar dibuat baru.
+	if tagihan.StatusBayar == "EXPIRED" && tagihan.XenditInvID != nil {
+		_ = s.repo.db.Model(&model.TagihanIuran{}).Where("id_tagihan = ?", tagihan.IDTagihan).Updates(map[string]any{"xendit_invoice_id": nil, "xendit_payment_url": nil}).Error
+		tagihan.XenditInvID = nil
+		tagihan.XenditPayURL = nil
 	}
 	if tagihan.XenditInvID != nil && tagihan.XenditPayURL != nil && *tagihan.XenditPayURL != "" {
 		return *tagihan.XenditPayURL, nil // invoice sudah dibuat sebelumnya

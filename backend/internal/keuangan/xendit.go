@@ -68,11 +68,12 @@ type XenditInvoiceReq struct {
 	Amount               int64  `json:"amount"`
 	Description          string `json:"description"`
 	PayerEmail           string `json:"payer_email,omitempty"`
-	Currency             string `json:"currency"`
-	SuccessRedirectURL   string `json:"success_redirect_url,omitempty"`
-	FailureRedirectURL   string `json:"failure_redirect_url,omitempty"`
-	InvoiceDuration      int    `json:"invoice_duration"`
-	CustomerNotification bool   `json:"customer_notification_preference,omitempty"`
+	Currency            string `json:"currency"`
+	SuccessRedirectURL  string `json:"success_redirect_url,omitempty"`
+	FailureRedirectURL  string `json:"failure_redirect_url,omitempty"`
+	InvoiceDuration        int  `json:"invoice_duration"`
+	CustomerNotification bool `json:"customer_notification_preference,omitempty"`
+	PaymentMethods        []string `json:"payment_methods,omitempty"`
 }
 
 type XenditInvoiceRes struct {
@@ -100,6 +101,7 @@ func (s *Service) CreateXenditInvoice(tenantID, tagihanID int, nominal float64, 
 		Currency:           "IDR",
 		SuccessRedirectURL: successURL,
 		InvoiceDuration:    24 * 3600, // 24 jam
+		PaymentMethods:     []string{"QR_CODE"}, // kebijakan: bayar hanya via QRIS
 	}
 
 	body, _ := json.Marshal(reqBody)

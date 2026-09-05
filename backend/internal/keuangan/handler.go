@@ -25,6 +25,7 @@ func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware)
 
 	r := app.Group("/keuangan", mw.AuthRequired)
 	r.Get("/tagihan", h.GetTagihan)
+	r.Get("/tagihan/:id", h.GetTagihanDetail)
 	r.Post("/tagihan/:id/bayar", h.BayarTagihan)
 	r.Post("/tagihan/:id/verifikasi", h.VerifikasiTagihan)
 
@@ -32,6 +33,19 @@ func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware)
 	g := app.Group("/keuangan", mw.RoleRequired("ketua_rt", "super_admin"))
 	g.Post("/tagihan/generate", h.GenerateTagihan)
 	g.Post("/tagihan/generate-rumah", h.GenerateTagihanRumah)
+}
+
+// GetTagihanDetail — lihat detail tagihan + rincian (pemilik rumah / pengurus).
+func (h *Handler) GetTagihanDetail(c fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tagihan tidak valid"})
+	}
+	detail, err := h.service.TagihanDetail(id, c.Locals("tenant_id").(int), c.Locals("user_id").(int), c.Locals("role").(string))
+	if err != nil {
+		return c.Status(403).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(detail)
 }
 
 func (h *Handler) BayarTagihan(c fiber.Ctx) error {
