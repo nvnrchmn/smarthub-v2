@@ -10,6 +10,7 @@ type User struct {
 	NamaLengkap  string    `gorm:"column:nama_lengkap;size:155;not null;default:''"`
 	Role         string    `gorm:"column:role;size:30;not null;default:warga"`
 	TokenFCM     string    `gorm:"column:fcm_token_pwa;size:255"`
+	UserStatus   string    `gorm:"column:user_status;size:30;not null;default:pending_verifikasi"`
 	IsActive     bool      `gorm:"column:is_active;default:true"`
 	CreatedAt    time.Time `gorm:"column:created_at"`
 	UpdatedAt    time.Time `gorm:"column:updated_at"`

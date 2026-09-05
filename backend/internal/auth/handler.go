@@ -187,3 +187,49 @@ func (h *Handler) DeactivateInviteCode(c fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "kode undangan berhasil dinonaktifkan"})
 }
+
+// ApproveWarga mengaktifkan user yang statusnya pending_verifikasi
+func (h *Handler) ApproveWarga(c fiber.Ctx) error {
+	tenantID := c.Locals("tenant_id").(int)
+	userID := c.Params("id")
+
+	var targetID int
+	if _, err := fmt.Sscanf(userID, "%d", &targetID); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tidak valid"})
+	}
+
+	if err := h.service.ApproveWarga(tenantID, targetID); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal mengaktifkan warga"})
+	}
+
+	return c.JSON(fiber.Map{"message": "warga berhasil diaktifkan"})
+}
+
+// RejectWarga menolak dan mensuspend user
+func (h *Handler) RejectWarga(c fiber.Ctx) error {
+	tenantID := c.Locals("tenant_id").(int)
+	userID := c.Params("id")
+
+	var targetID int
+	if _, err := fmt.Sscanf(userID, "%d", &targetID); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tidak valid"})
+	}
+
+	if err := h.service.RejectWarga(tenantID, targetID); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal menolak warga"})
+	}
+
+	return c.JSON(fiber.Map{"message": "warga berhasil ditolak"})
+}
+
+// ListWargaPending mengambil list user yg statusnya pending_verifikasi
+func (h *Handler) ListWargaPending(c fiber.Ctx) error {
+	tenantID := c.Locals("tenant_id").(int)
+
+	users, err := h.service.ListWargaPending(tenantID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal memuat data warga pending"})
+	}
+
+	return c.JSON(fiber.Map{"data": users})
+}

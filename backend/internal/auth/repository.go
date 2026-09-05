@@ -72,6 +72,7 @@ func (r *Repository) RegisterPengurusWithTenant(tenant *model.Tenant, passwordHa
 			PasswordHash: passwordHash,
 			NamaLengkap:  namaLengkap,
 			Role:         "ketua_rt",
+			UserStatus:   "active",
 			IsActive:     true,
 		}
 		if err := tx.Create(user).Error; err != nil {
@@ -84,7 +85,7 @@ func (r *Repository) RegisterPengurusWithTenant(tenant *model.Tenant, passwordHa
 }
 
 // RegisterUserWithTenant membuat user dengan tenant tertentu
-func (r *Repository) RegisterUserWithTenant(tenantID int, passwordHash string, nomorWA string, namaLengkap string, role string, userID *int) error {
+func (r *Repository) RegisterUserWithTenant(tenantID int, passwordHash string, nomorWA string, namaLengkap string, role string, userStatus string, userID *int) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		user := &model.User{
 			TenantID:     tenantID,
@@ -92,7 +93,8 @@ func (r *Repository) RegisterUserWithTenant(tenantID int, passwordHash string, n
 			PasswordHash: passwordHash,
 			NamaLengkap:  namaLengkap,
 			Role:         role,
-			IsActive:     true,
+			UserStatus:   userStatus,
+			IsActive:     userStatus == "active",
 		}
 		if err := tx.Create(user).Error; err != nil {
 			return err
@@ -101,6 +103,26 @@ func (r *Repository) RegisterUserWithTenant(tenantID int, passwordHash string, n
 		*userID = user.ID
 		return nil
 	})
+}
+
+func (r *Repository) ApproveWarga(tenantID int, userID int) error {
+	return r.db.Model(&model.User{}).Where("id_user = ? AND id_tenant = ?", userID, tenantID).Updates(map[string]interface{}{
+		"user_status": "active",
+		"is_active":   true,
+	}).Error
+}
+
+func (r *Repository) RejectWarga(tenantID int, userID int) error {
+	return r.db.Model(&model.User{}).Where("id_user = ? AND id_tenant = ?", userID, tenantID).Updates(map[string]interface{}{
+		"user_status": "suspended",
+		"is_active":   false,
+	}).Error
+}
+
+func (r *Repository) ListWargaPending(tenantID int) ([]model.User, error) {
+	var users []model.User
+	err := r.db.Where("id_tenant = ? AND user_status = ?", tenantID, "pending_verifikasi").Order("created_at DESC").Find(&users).Error
+	return users, err
 }
 
 // CreateInviteCode menyimpan kode undangan baru

@@ -72,6 +72,9 @@ func main() {
 	app.Post("/auth/invite-codes", mw.AuthRequired, authHandler.GenerateInviteCode)
 	app.Get("/auth/invite-codes", mw.AuthRequired, authHandler.ListInviteCodes)
 	app.Delete("/auth/invite-codes/:id", mw.AuthRequired, authHandler.DeactivateInviteCode)
+	app.Post("/auth/warga-approve/:id", mw.AuthRequired, mw.RoleRequired("ketua_rt", "super_admin"), authHandler.ApproveWarga)
+	app.Post("/auth/warga-reject/:id", mw.AuthRequired, mw.RoleRequired("ketua_rt", "super_admin"), authHandler.RejectWarga)
+	app.Get("/auth/warga-pending", mw.AuthRequired, mw.RoleRequired("ketua_rt", "super_admin"), authHandler.ListWargaPending)
 	app.Get("/me", mw.AuthRequired, func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"user_id":   c.Locals("user_id"),

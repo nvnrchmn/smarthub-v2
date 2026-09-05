@@ -247,7 +247,7 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 	}
 
 	var userID int
-	err = s.repo.RegisterUserWithTenant(tenantID, string(hash), input.NomorWA, input.NamaLengkap, role, &userID)
+	err = s.repo.RegisterUserWithTenant(tenantID, string(hash), input.NomorWA, input.NamaLengkap, role, "pending_verifikasi", &userID)
 	if err != nil {
 		return nil, err
 	}
@@ -263,6 +263,21 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		TenantID: tenantID,
 		UserID:   userID,
 	}, nil
+}
+
+// ApproveWarga mengaktifkan user yang statusnya pending_verifikasi
+func (s *Service) ApproveWarga(tenantID int, userID int) error {
+	return s.repo.ApproveWarga(tenantID, userID)
+}
+
+// RejectWarga menolak dan mensuspend user
+func (s *Service) RejectWarga(tenantID int, userID int) error {
+	return s.repo.RejectWarga(tenantID, userID)
+}
+
+// ListWargaPending mengambil list user yg statusnya pending_verifikasi
+func (s *Service) ListWargaPending(tenantID int) ([]model.User, error) {
+	return s.repo.ListWargaPending(tenantID)
 }
 
 // GenerateInviteCode membuat kode undangan baru
