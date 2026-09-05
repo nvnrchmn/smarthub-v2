@@ -42,6 +42,10 @@ import { TenantsPage } from './pages/admin/TenantsPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { SettingsPage } from './pages/admin/SettingsPage'
 import { AdminSettlementPage } from './pages/admin/SettlementPage'
+import { TenantDetailPage } from './pages/admin/TenantDetailPage'
+import { AuditLogPage } from './pages/admin/AuditLogPage'
+import { BroadcastPage } from './pages/admin/BroadcastPage'
+import { AnalyticsPage } from './pages/admin/AnalyticsPage'
 
 export default function App() {
   return (
@@ -89,6 +93,10 @@ export default function App() {
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/settings" element={<SettingsPage />} />
           <Route path="/admin/settlement" element={<AdminSettlementPage />} />
+          <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
+          <Route path="/admin/audit-logs" element={<AuditLogPage />} />
+          <Route path="/admin/broadcast" element={<BroadcastPage />} />
+          <Route path="/admin/analytics" element={<AnalyticsPage />} />
         </Route>
 
         {/* Fallback */}
