@@ -271,8 +271,8 @@ export function RTTagihanPage() {
           )}
 
           <div>
-            <label htmlFor="periode-satu" className="mb-1.5 block text-[13px] font-semibold text-text-primary">Periode (bulan-tahun)</label>
-            <input id="periode-satu" type="month" value={periodeSatu} onChange={(e) => setPeriodeSatu(e.target.value)} className={inputCls} />
+            <label htmlFor="periode-satu" className="mb-2 block text-[13px] font-semibold text-text-primary">Periode (bulan-tahun)</label>
+            <input id="periode-satu" type="month" value={periodeSatu} onChange={(e) => setPeriodeSatu(e.target.value)} className={cn(inputCls, 'h-12 text-base')} />
           </div>
 
           <p className="flex items-start gap-2 rounded-xl bg-primary-50 px-3.5 py-3 text-xs text-text-secondary">

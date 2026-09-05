@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { uploadFoto } from '../../lib/upload'
 import { Icon } from './Icon'
-import { cn } from '../../lib/utils'
 
 interface Props {
   value: string
@@ -40,27 +39,33 @@ export function FotoField({ value, onChange }: Props) {
   return (
     <div>
       <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => pilih(e.target.files?.[0])} />
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={() => inputRef.current?.click()} disabled={sibuk}
-          className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface px-4 text-sm font-medium text-text-secondary transition-colors active:scale-[.98] disabled:opacity-60">
-          <Icon name="plus" size={15} />
-          {sibuk ? 'Mengunggah…' : tampil ? 'Ganti foto' : 'Pilih foto'}
-        </button>
-        {tampil && (
-          <button type="button" onClick={() => onChange('')} aria-label="Hapus foto"
-            className="grid h-11 w-11 place-items-center rounded-xl border border-border bg-surface-card text-text-secondary hover:text-danger">
-            <Icon name="trash" size={16} />
-          </button>
-        )}
-      </div>
       {tampil ? (
-        <div className="mt-3 flex items-center gap-3">
-          <img src={value} alt="Pratinjau produk" className="h-16 w-16 rounded-xl border border-border object-cover" />
-          <span className={cn('truncate text-xs', err ? 'text-danger' : 'text-text-secondary')}>{err || 'Terunggah — foto akan tampil di Lapak.'}</span>
+        <div className="flex items-center gap-3">
+          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border">
+            <img src={value} alt="Pratinjau produk" className="h-full w-full object-cover" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <button type="button" onClick={() => inputRef.current?.click()} disabled={sibuk}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface-card px-3 py-2 text-sm font-medium text-text-secondary transition-colors active:scale-[.98] disabled:opacity-60">
+              <Icon name="refresh" size={14} />
+              {sibuk ? 'Mengunggah…' : 'Ganti foto'}
+            </button>
+            <button type="button" onClick={() => onChange('')} aria-label="Hapus foto"
+              className="ml-2 inline-flex items-center gap-1.5 rounded-xl border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition-colors">
+              <Icon name="trash" size={14} />
+              Hapus
+            </button>
+          </div>
         </div>
       ) : (
-        err && <p className="mt-2 text-xs text-danger">{err}</p>
+        <button type="button" onClick={() => inputRef.current?.click()} disabled={sibuk}
+          className="flex min-h-[52px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface px-4 text-sm font-medium text-text-secondary transition-colors active:scale-[.98] disabled:opacity-60">
+          <Icon name="plus" size={18} className="text-primary" />
+          {sibuk ? 'Mengunggah…' : 'Pilih foto dari galeri'}
+          <span className="text-[11px]">PNG, JPG, WebP · maks 8 MB</span>
+        </button>
       )}
+      {err && <p className="mt-2 text-xs text-danger">{err}</p>}
     </div>
   )
 }
