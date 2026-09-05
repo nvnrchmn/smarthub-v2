@@ -93,11 +93,22 @@ func (s *Service) ListAll() ([]model.Layanan, error) {
 	return list, err
 }
 
-// ListAllInvoices returns all invoices (super admin)
-func (s *Service) ListAllInvoices() ([]model.Invoice, error) {
-	var list []model.Invoice
-	err := s.db.Order("created_at DESC").Find(&list).Error
+// ListAllInvoices returns all invoices with tenant name (super admin)
+func (s *Service) ListAllInvoices() ([]InvoiceWithTenant, error) {
+	var list []InvoiceWithTenant
+	err := s.db.Table("invoice i").
+		Select("i.*, t.nama_rt_rw as tenant_nama, l.id_rumah").
+		Joins("JOIN layanan l ON l.id_layanan = i.id_layanan").
+		Joins("JOIN tenants t ON t.id_tenant = l.id_tenant").
+		Order("i.created_at DESC").
+		Scan(&list).Error
 	return list, err
+}
+
+type InvoiceWithTenant struct {
+	model.Invoice
+	TenantNama string `json:"tenant_nama"`
+	IDRumah    int    `json:"id_rumah"`
 }
 
 // Summary returns super admin summary
