@@ -32,6 +32,21 @@ func (h *Handler) GetThreads(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
+	// Enrich: nama penulis + jumlah komentar (sekali query masing-masing)
+	ids := make([]int, 0, len(threads))
+	for _, t := range threads {
+		ids = append(ids, t.IDUser)
+	}
+	names, _ := h.service.repo.GetWargaNames(ids)
+	threadIDs := make([]int, 0, len(threads))
+	for _, t := range threads {
+		threadIDs = append(threadIDs, t.IDThread)
+	}
+	counts, _ := h.service.repo.CountKomentarByThreads(threadIDs)
+	for i := range threads {
+		threads[i].NamaPenulis = names[threads[i].IDUser]
+		threads[i].KomentarCount = counts[threads[i].IDThread]
+	}
 	return c.JSON(threads)
 }
 
@@ -60,6 +75,16 @@ func (h *Handler) GetThread(c fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "thread tidak ditemukan"})
 	}
 	komentar, _ := h.service.repo.GetKomentarByThread(id)
+	// Nama penulis thread + komentar
+	ids := []int{thread.IDUser}
+	for _, k := range komentar {
+		ids = append(ids, k.IDUser)
+	}
+	names, _ := h.service.repo.GetWargaNames(ids)
+	thread.NamaPenulis = names[thread.IDUser]
+	for i := range komentar {
+		komentar[i].NamaPenulis = names[komentar[i].IDUser]
+	}
 	return c.JSON(fiber.Map{"thread": thread, "komentar": komentar})
 }
 

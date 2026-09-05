@@ -11,6 +11,9 @@ type Thread struct {
 	Konten      string    `gorm:"column:konten;not null" json:"konten"`
 	CreatedAt   time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"column:updated_at" json:"updated_at"`
+	// NamaPenulis diisi saat read (join warga), tidak dipetakan ke kolom DB.
+	NamaPenulis   string `gorm:"-" json:"nama_penulis"`
+	KomentarCount int    `gorm:"-" json:"komentar_count"`
 }
 
 func (Thread) TableName() string { return "forum_threads" }
@@ -21,6 +24,7 @@ type Komentar struct {
 	IDUser      int       `gorm:"column:id_user" json:"id_user"`
 	Komentar    string    `gorm:"column:komentar;not null" json:"komentar"`
 	CreatedAt   time.Time `gorm:"column:created_at" json:"created_at"`
+	NamaPenulis string    `gorm:"-" json:"nama_penulis"`
 }
 
 func (Komentar) TableName() string { return "forum_komentar" }
@@ -33,7 +37,7 @@ type Produk struct {
 	Deskripsi    string    `gorm:"column:deskripsi;not null" json:"deskripsi"`
 	Harga        float64   `gorm:"column:harga;type:decimal(12,2);default:0" json:"harga"`
 	FotoURL      string    `gorm:"column:foto_url" json:"foto_url"`
-	IsApproved   bool      `gorm:"column:is_approved;default:true" json:"is_approved"`
+	IsApproved   bool      `gorm:"column:is_approved" json:"is_approved"`
 	CreatedAt    time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt    time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
