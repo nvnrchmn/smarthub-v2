@@ -6,7 +6,7 @@ import { cn } from '../lib/utils'
 const adminLinks: { path: string; label: string; icon: IconName }[] = [
   { path: '/admin', label: 'Dashboard', icon: 'grid' },
   { path: '/admin/tenants', label: 'Tenants', icon: 'building' },
-  { path: '/admin/users', label: 'Users', icon: 'users' },
+  { path: '/admin/settlement', label: 'Settlement', icon: 'bank' },
   { path: '/admin/settings', label: 'Pengaturan', icon: 'settings' },
 ]
 

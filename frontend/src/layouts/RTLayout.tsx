@@ -5,12 +5,10 @@ import { cn } from '../lib/utils'
 
 const rtLinks: { path: string; label: string; icon: IconName }[] = [
   { path: '/rt', label: 'Dashboard', icon: 'grid' },
-  { path: '/rt/rumah', label: 'Rumah', icon: 'home' },
   { path: '/rt/warga', label: 'Warga', icon: 'users' },
   { path: '/rt/tagihan', label: 'Tagihan', icon: 'wallet' },
+  { path: '/rt/settlement', label: 'Settlement', icon: 'bank' },
   { path: '/rt/pengaturan', label: 'Pengaturan', icon: 'settings' },
-  { path: '/rt/forum', label: 'Forum', icon: 'chat' },
-  { path: '/rt/lapak', label: 'Lapak', icon: 'store' },
 ]
 
 export function RTLayout() {
