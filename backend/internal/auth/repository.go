@@ -31,9 +31,18 @@ func (r *Repository) CreateTenant(tenant *model.Tenant) error {
 }
 
 func (r *Repository) TenantExists(tenantID int) bool {
-	var n int64
-	r.db.Table("tenants").Where("id_tenant = ?", tenantID).Count(&n)
-	return n > 0
+	var c int64
+	r.db.Model(&model.Tenant{}).Where("id_tenant = ?", tenantID).Count(&c)
+	return c > 0
+}
+
+// GetTenantStatus — status_berlangganan tenant (info-only banner, tanpa enforce).
+func (r *Repository) GetTenantStatus(tenantID int) (string, error) {
+	var t model.Tenant
+	if err := r.db.Select("status_berlangganan").Where("id_tenant = ?", tenantID).First(&t).Error; err != nil {
+		return "", err
+	}
+	return t.StatusBerlanggan, nil
 }
 
 func (r *Repository) CreateUser(user *model.User) error {

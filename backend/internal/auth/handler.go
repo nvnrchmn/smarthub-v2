@@ -47,6 +47,7 @@ func (h *Handler) Register(c fiber.Ctx) error {
 		"user_id":   res.UserID,
 		"role":      res.Role,
 		"tenant_id": res.TenantID,
+		"tenant_status": res.TenantStatus,
 	})
 }
 
@@ -91,6 +92,7 @@ func (h *Handler) RegisterPengurus(c fiber.Ctx) error {
 		"user_id":     res.UserID,
 		"role":        res.Role,
 		"tenant_id":   res.TenantID,
+		"tenant_status": res.TenantStatus,
 		"invite_code": res.InviteCode,
 	})
 }
@@ -126,6 +128,7 @@ func (h *Handler) RegisterWithInvite(c fiber.Ctx) error {
 		"user_id":   res.UserID,
 		"role":      res.Role,
 		"tenant_id": res.TenantID,
+		"tenant_status": res.TenantStatus,
 	})
 }
 

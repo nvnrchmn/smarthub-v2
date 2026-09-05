@@ -53,11 +53,12 @@ type RegisterPengurusInput struct {
 }
 
 type LoginResponse struct {
-	Token      string `json:"token"`
-	Role       string `json:"role"`
-	TenantID   int    `json:"tenant_id"`
-	UserID     int    `json:"user_id"`
-	InviteCode string `json:"invite_code,omitempty"`
+	Token        string `json:"token"`
+	Role         string `json:"role"`
+	TenantID     int    `json:"tenant_id"`
+	TenantStatus string `json:"tenant_status"` // info-only (audit 2026-09-05): untuk banner UI, tanpa blokir
+	UserID       int    `json:"user_id"`
+	InviteCode   string `json:"invite_code,omitempty"`
 }
 
 func generateRandomCode(length int) string {
@@ -97,6 +98,9 @@ func (s *Service) Login(input LoginInput) (*LoginResponse, error) {
 		Role:     user.Role,
 		TenantID: user.TenantID,
 		UserID:   user.ID,
+	}
+	if ts, err := s.repo.GetTenantStatus(user.TenantID); err == nil {
+		resp.TenantStatus = ts
 	}
 
 	if user.Role == "ketua_rt" {
@@ -183,12 +187,14 @@ func (s *Service) RegisterPengurus(input RegisterPengurusInput) (*LoginResponse,
 		return nil, err
 	}
 
+	ts, _ := s.repo.GetTenantStatus(tenant.ID)
 	return &LoginResponse{
-		Token:      token,
-		Role:       "ketua_rt",
-		TenantID:   tenant.ID,
-		UserID:     userID,
-		InviteCode: inviteCode,
+		Token:        token,
+		Role:         "ketua_rt",
+		TenantID:     tenant.ID,
+		TenantStatus: ts,
+		UserID:       userID,
+		InviteCode:   inviteCode,
 	}, nil
 }
 
@@ -262,11 +268,13 @@ func (s *Service) RegisterWithInvite(input RegisterInput, inviteCode string) (*L
 		return nil, err
 	}
 
+	ts, _ := s.repo.GetTenantStatus(tenantID)
 	return &LoginResponse{
-		Token:    token,
-		Role:     role,
-		TenantID: tenantID,
-		UserID:   userID,
+		Token:        token,
+		Role:         role,
+		TenantID:     tenantID,
+		TenantStatus: ts,
+		UserID:       userID,
 	}, nil
 }
 

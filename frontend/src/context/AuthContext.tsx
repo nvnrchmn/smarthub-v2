@@ -6,6 +6,7 @@ export interface User {
   tenant_id: number
   nama?: string
   user_status?: string
+  tenant_status?: string // info-only (audit 2026-09-05): banner langganan NONAKTIF
 }
 
 interface AuthContextType {
