@@ -128,6 +128,40 @@ func (s *Service) HandleWebhook(invID, status string) error {
 	return nil
 }
 
+// VerifikasiTagihan — konfirmasi status invoice langsung ke Xendit, lalu catat
+// PAID/EXPIRED bila perlu. Cadangan andal bila webhook belum terpasang/telat.
+func (s *Service) VerifikasiTagihan(tagihanID, tenantID int) (string, error) {
+	var tagihan model.TagihanIuran
+	if err := s.repo.db.Where("id_tagihan = ? AND id_tenant = ?", tagihanID, tenantID).First(&tagihan).Error; err != nil {
+		return "", errors.New("tagihan tidak ditemukan")
+	}
+	if tagihan.StatusBayar == "PAID" {
+		return "PAID", nil
+	}
+	if tagihan.XenditInvID == nil || *tagihan.XenditInvID == "" {
+		return "", errors.New("belum ada invoice Xendit untuk tagihan ini")
+	}
+	st, err := s.GetXenditInvoiceStatus(*tagihan.XenditInvID)
+	if err != nil {
+		return "", err
+	}
+	switch st {
+	case "PAID":
+		now := time.Now()
+		if err := s.repo.UpdateStatusTagihan(tagihan.IDTagihan, "PAID", &now); err != nil {
+			return "", err
+		}
+		return "PAID", nil
+	case "EXPIRED":
+		if err := s.repo.UpdateStatusTagihan(tagihan.IDTagihan, "EXPIRED", nil); err != nil {
+			return "", err
+		}
+		return "EXPIRED", nil
+	default:
+		return st, nil // PENDING/dll — biarkan
+	}
+}
+
 // BayarTagihan membuat invoice Xendit untuk sebuah tagihan (idempotent: invoice
 // aktif yang sudah ada akan dikembalikan, bukan dibuat baru).
 func (s *Service) BayarTagihan(tagihanID, userID, tenantID int, payerEmail, successURL string) (string, error) {

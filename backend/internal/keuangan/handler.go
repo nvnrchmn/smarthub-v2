@@ -2,6 +2,7 @@ package keuangan
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -25,6 +26,7 @@ func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware)
 	r := app.Group("/keuangan", mw.AuthRequired)
 	r.Get("/tagihan", h.GetTagihan)
 	r.Post("/tagihan/:id/bayar", h.BayarTagihan)
+	r.Post("/tagihan/:id/verifikasi", h.VerifikasiTagihan)
 
 	// Generate tagihan hanya untuk pengurus RT / super admin
 	g := app.Group("/keuangan", mw.RoleRequired("ketua_rt", "super_admin"))
@@ -51,13 +53,28 @@ func (h *Handler) BayarTagihan(c fiber.Ctx) error {
 	if successURL == "" {
 		successURL = "https://smarthub.logikraf.id"
 	}
-	successURL = successURL + "/app/tagihan?status=success"
+	successURL = successURL + "/app/tagihan?status=success&id=" + strconv.Itoa(id)
 
 	payURL, err := h.service.BayarTagihan(id, userID, tenantID, req.PayerEmail, successURL)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"payment_url": payURL})
+}
+
+// VerifikasiTagihan — cek status invoice di Xendit lalu catat lunas bila PAID.
+// Dipakai saat user kembali dari halaman bayar (cadangan bila webhook telat/tidak terpasang).
+func (h *Handler) VerifikasiTagihan(c fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tagihan tidak valid"})
+	}
+	tenantID := c.Locals("tenant_id").(int)
+	status, err := h.service.VerifikasiTagihan(id, tenantID)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"status": status})
 }
 
 func (h *Handler) GetTagihan(c fiber.Ctx) error {
@@ -129,7 +146,10 @@ func (h *Handler) WebhookXendit(c fiber.Ctx) error {
 	}
 
 	if err := h.service.HandleWebhook(payload.ID, payload.Status); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		log.Printf("[webhook-xendit] invoice=%s status=%s err=%v", payload.ID, payload.Status, err)
+		// Tetap 200 agar Xendit berhenti retry; masalah dicatat di log.
+		return c.JSON(fiber.Map{"status": "ok", "note": "received"})
 	}
+	log.Printf("[webhook-xendit] invoice=%s status=%s → diproses", payload.ID, payload.Status)
 	return c.JSON(fiber.Map{"status": "ok"})
 }

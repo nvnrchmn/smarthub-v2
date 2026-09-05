@@ -31,6 +31,36 @@ func (s *Service) WebhookToken() string {
 	return os.Getenv("XENDIT_WEBHOOK_TOKEN")
 }
 
+// GetXenditInvoiceStatus — cek status invoice di Xendit (untuk verifikasi on-return).
+func (s *Service) GetXenditInvoiceStatus(invoiceID string) (string, error) {
+	secret := s.xenditSecret()
+	if secret == "" {
+		return "", fmt.Errorf("Xendit secret key belum di-set — isi di Pengaturan (Super Admin)")
+	}
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.xendit.co/v2/invoices/%s", invoiceID), nil)
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(secret+":")))
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("xendit: %v", err)
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		hint := string(raw)
+		if len(hint) > 300 {
+			hint = hint[:300]
+		}
+		return "", fmt.Errorf("xendit: HTTP %d — %s", resp.StatusCode, hint)
+	}
+	var out struct {
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return "", fmt.Errorf("xendit: decode gagal: %v", err)
+	}
+	return out.Status, nil
+}
+
 const xenditAPI = "https://api.xendit.co/v2/invoices"
 
 type XenditInvoiceReq struct {

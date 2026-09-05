@@ -26,6 +26,8 @@ export function TagihanSayaPage() {
   const [err, setErr] = useState('')
   const [filter, setFilter] = useState<Filter>('SEMUA')
   const notice = params.get('status') === 'success' ? 'Pembayaran diterima — terima kasih!' : params.get('status') === 'cancel' ? 'Pembayaran dibatalkan. Kamu bisa mencoba lagi kapan saja.' : ''
+  const idSelesai = Number(params.get('id') || 0)
+  const [verif, setVerif] = useState<'cek' | 'ok' | 'belum' | 'gagal'>()
 
   const tenantId = user?.tenant_id ?? 1
 
@@ -38,6 +40,28 @@ export function TagihanSayaPage() {
   }
   useEffect(load, [tenantId])
   useEffect(() => { if (notice) setErr('') }, [notice])
+  // Saat kembali dari Xendit (?status=success&id=…): konfirmasi status invoice
+  // langsung ke Xendit — cadangan bila webhook belum terpasang/telat.
+  useEffect(() => {
+    if (!idSelesai || params.get('status') !== 'success') return
+    let batal = false
+    ;(async () => {
+      setVerif('cek')
+      try {
+        const r = await api<{ status: string }>(`/keuangan/tagihan/${idSelesai}/verifikasi`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        })
+        if (!batal) setVerif(r.status === 'PAID' ? 'ok' : 'belum')
+      } catch {
+        if (!batal) setVerif('gagal')
+      } finally {
+        if (!batal) load()
+      }
+    })()
+    return () => { batal = true }
+  }, [idSelesai])
 
   const bayar = async (t: Tagihan) => {
     setErr('')
@@ -102,10 +126,34 @@ export function TagihanSayaPage() {
         </div>
       </section>
 
-      {notice && (
-        <div role="status" className={cn('mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm', notice.startsWith('Pembayaran diterima') ? 'border-status-paid/30 bg-status-paid-bg text-status-paid' : 'border-border bg-surface-card text-text-secondary')}>
-          <Icon name={notice.startsWith('Pembayaran diterima') ? 'check' : 'clock'} size={16} className="mt-0.5 shrink-0" />
-          {notice}
+      {(notice || verif) && (
+        <div
+          role="status"
+          className={cn(
+            'mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm',
+            verif === 'cek'
+              ? 'border-border bg-surface-card text-text-secondary'
+              : verif === 'ok' || (verif !== 'belum' && verif !== 'gagal' && notice.startsWith('Pembayaran diterima'))
+                ? 'border-status-paid/30 bg-status-paid-bg text-status-paid'
+                : verif === 'gagal'
+                  ? 'border-status-overdue/30 bg-status-overdue-bg text-status-overdue'
+                  : 'border-border bg-surface-card text-text-secondary'
+          )}
+        >
+          <Icon
+            name={verif === 'cek' ? 'refresh' : verif === 'ok' ? 'check' : verif === 'gagal' ? 'alert' : 'clock'}
+            size={16}
+            className={cn('mt-0.5 shrink-0', verif === 'cek' && 'animate-spin')}
+          />
+          {verif === 'cek'
+            ? 'Memverifikasi pembayaran ke Xendit…'
+            : verif === 'ok'
+              ? 'Pembayaran diterima — tagihan sudah lunas!'
+              : verif === 'gagal'
+                ? 'Gagal memverifikasi pembayaran. Coba muat ulang, atau hubungi pengurus.'
+                : verif === 'belum'
+                  ? 'Pembayaran belum tercatat otomatis. Bila sudah bayar, hubungi pengurus agar dicatat manual.'
+                  : notice}
         </div>
       )}
       {err && !notice && (
