@@ -7,6 +7,11 @@ const adminLinks: { path: string; label: string; icon: IconName }[] = [
   { path: '/admin', label: 'Dashboard', icon: 'grid' },
   { path: '/admin/tenants', label: 'Tenants', icon: 'building' },
   { path: '/admin/settlement', label: 'Settlement', icon: 'bank' },
+  { path: '/admin/subscription', label: 'Subscription', icon: 'star' },
+  { path: '/admin/cms', label: 'CMS', icon: 'file' },
+  { path: '/admin/audit-logs', label: 'Audit', icon: 'clock' },
+  { path: '/admin/broadcast', label: 'Broadcast', icon: 'megaphone' },
+  { path: '/admin/users', label: 'Users', icon: 'users' },
   { path: '/admin/settings', label: 'Pengaturan', icon: 'settings' },
 ]
 
