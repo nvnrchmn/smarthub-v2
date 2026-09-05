@@ -24,6 +24,13 @@ Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), po
 ## Docs acuan (baca dulu sebelum kerja)
 docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di root repo
 
+## Layout Pattern (FIX 2026-09-05)
+- Semua layout: `h-dvh flex flex-col bg-surface` — TIDAK BOLEH pakai `min-h-screen` + scroll seluruh body
+- `<main className="flex-1 overflow-y-auto overflow-x-hidden">` — hanya konten yang scroll
+- BottomNav/BottomBar: fixed di bawah via `flex-shrink-0` (bukan `fixed` + `bottom-0` + `pb-28`)
+- Modal/Drawer: render via `createPortal(..., document.body)` — centered viewport, independen dari scroll user
+- Struktur: `<h-dvh><aside fixed/><main flex-1 overflow-y-auto><Outlet/></main><BottomNav/></h-dvh>` + `<Portal><Modal/></Portal>`
+
 ## Konvensi
 - UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA; mode gelap otomatis via prefers-color-scheme (token warna = CSS var di index.css)
 - Komponen UI: pakai `components/ui/bento.tsx` (BentoCard/KPI/ActionTile/Skeleton/EmptyState/ErrorState) & `Icon.tsx` (SVG, JANGAN emoji) — lihat docs/UX-HEURISTICS.md (10 heuristik Nielsen & psikologi UX, e3dc1f5)
@@ -32,3 +39,10 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 - Endpoint keuangan: POST /tagihan/generate (massal) & /tagihan/generate-rumah {id_rumah,periode} (manual, idempoten, RBAC pengurus) — 7b1fc9c
 - Frontend: helper `api(path)` di src/lib/api.ts SUDAH prepend BASE '/api' — panggil `api('/forum')`, JANGAN `api('/api/forum')` (double-prefix → 404/500, bug 2b19e86)
 - Backup cron VPS: 03:00 → /www/backup/smarthub
+
+## Deployment (FIX 2026-09-05)
+- Build lokal: `cd frontend && npm run build` → `frontend/dist/`
+- Sync ke VPS: `sudo cp -r frontend/dist/* /www/wwwroot/smarthub.logikraf.id/ && sudo chown -R www:www /www/wwwroot/smarthub.logikraf.id/`
+- Restart: `sudo nginx -s reload` + `sudo systemctl restart smarthub` (atau kill + nohup)
+- File lama di web root harus dihapus sebelum copy baru (nama file hash berubah tiap build)
+- Service: `/usr/local/bin/smarthub-server` (systemd), port 8082, config `/etc/smarthub.env`

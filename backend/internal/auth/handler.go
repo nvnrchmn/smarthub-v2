@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -45,4 +48,142 @@ func (h *Handler) Register(c fiber.Ctx) error {
 		"role":      res.Role,
 		"tenant_id": res.TenantID,
 	})
+}
+
+// RegisterPengurus handles registration for pengurus (ketua_rt)
+// with automatic tenant creation
+type registerPengurusRequest struct {
+	NomorWA       string `json:"nomor_wa"`
+	Password      string `json:"password"`
+	NamaLengkap   string `json:"nama_lengkap"`
+	NamaRT        string `json:"nama_rt"`
+	DesaKelurahan string `json:"desa_kelurahan"`
+	Kecamatan     string `json:"kecamatan"`
+	KabupatenKota string `json:"kabupaten_kota"`
+	Provinsi      string `json:"provinsi"`
+}
+
+func (h *Handler) RegisterPengurus(c fiber.Ctx) error {
+	var req registerPengurusRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
+	}
+
+	input := RegisterPengurusInput{
+		NomorWA:       req.NomorWA,
+		Password:      req.Password,
+		NamaLengkap:   req.NamaLengkap,
+		NamaRT:        req.NamaRT,
+		DesaKelurahan: req.DesaKelurahan,
+		Kecamatan:     req.Kecamatan,
+		KabupatenKota: req.KabupatenKota,
+		Provinsi:      req.Provinsi,
+	}
+
+	res, err := h.service.RegisterPengurus(input, false)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message":     "registrasi pengurus berhasil",
+		"token":       res.Token,
+		"user_id":     res.UserID,
+		"role":        res.Role,
+		"tenant_id":   res.TenantID,
+		"invite_code": res.InviteCode,
+	})
+}
+
+// RegisterWithInvite handles registration using invite code
+type registerWithInviteRequest struct {
+	NomorWA     string `json:"nomor_wa"`
+	Password    string `json:"password"`
+	NamaLengkap string `json:"nama_lengkap"`
+	InviteCode  string `json:"invite_code"`
+}
+
+func (h *Handler) RegisterWithInvite(c fiber.Ctx) error {
+	var req registerWithInviteRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
+	}
+
+	input := RegisterInput{
+		NomorWA:     req.NomorWA,
+		Password:    req.Password,
+		NamaLengkap: req.NamaLengkap,
+	}
+
+	res, err := h.service.RegisterWithInvite(input, req.InviteCode)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message":   "registrasi berhasil via undangan",
+		"token":     res.Token,
+		"user_id":   res.UserID,
+		"role":      res.Role,
+		"tenant_id": res.TenantID,
+	})
+}
+
+// GenerateInviteCode handles creating new invite codes
+type generateInviteRequest struct {
+	RoleFor   string     `json:"role_for"`
+	MaxUses   *int       `json:"max_uses"`
+	ExpiresAt *time.Time `json:"expires_at"`
+}
+
+func (h *Handler) GenerateInviteCode(c fiber.Ctx) error {
+	var req generateInviteRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
+	}
+
+	// Get tenant_id and user_id from JWT
+	tenantID := c.Locals("tenant_id").(int)
+	userID := c.Locals("user_id").(int)
+
+	code, err := h.service.GenerateInviteCode(tenantID, userID, req.RoleFor, req.MaxUses, req.ExpiresAt)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "kode undangan berhasil dibuat",
+		"code":    code,
+	})
+}
+
+// ListInviteCodes lists all invite codes for the tenant
+func (h *Handler) ListInviteCodes(c fiber.Ctx) error {
+	tenantID := c.Locals("tenant_id").(int)
+
+	codes, err := h.service.repo.ListInviteCodesByTenant(tenantID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal memuat kode undangan"})
+	}
+
+	return c.JSON(fiber.Map{"data": codes})
+}
+
+// DeactivateInviteCode deactivates an invite code
+func (h *Handler) DeactivateInviteCode(c fiber.Ctx) error {
+	codeID := c.Params("id")
+	if codeID == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "id kode undangan wajib diisi"})
+	}
+
+	var id int
+	if _, err := fmt.Sscanf(codeID, "%d", &id); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "id tidak valid"})
+	}
+
+	if err := h.service.repo.DeactivateInviteCode(id); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "gagal menonaktifkan kode undangan"})
+	}
+
+	return c.JSON(fiber.Map{"message": "kode undangan berhasil dinonaktifkan"})
 }

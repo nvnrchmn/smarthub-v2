@@ -13,6 +13,7 @@ import { AdminLayout } from './layouts/AdminLayout'
 import { LandingPage } from './pages/public/LandingPage'
 import { LoginPage } from './pages/public/LoginPage'
 import { RegisterPage } from './pages/public/RegisterPage'
+import { RegisterPengurusPage } from './pages/public/RegisterPengurusPage'
 import { UnauthorizedPage } from './pages/public/UnauthorizedPage'
 
 // Warga pages
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/register-pengurus" element={<RegisterPengurusPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>
 

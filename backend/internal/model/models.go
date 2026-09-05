@@ -7,6 +7,7 @@ type User struct {
 	TenantID     int       `gorm:"column:id_tenant;type:int;not null"`
 	NomorWA      string    `gorm:"column:nomor_wa;size:20;not null;uniqueIndex"`
 	PasswordHash string    `gorm:"column:password_hash;not null"`
+	NamaLengkap  string    `gorm:"column:nama_lengkap;size:155;not null;default:''"`
 	Role         string    `gorm:"column:role;size:30;not null;default:warga"`
 	TokenFCM     string    `gorm:"column:fcm_token_pwa;size:255"`
 	IsActive     bool      `gorm:"column:is_active;default:true"`
@@ -22,7 +23,7 @@ type Tenant struct {
 	KabupatenKota    string    `gorm:"column:kabupaten_kota;size:100"`
 	Provinsi         string    `gorm:"column:provinsi;size:100"`
 	XenditSubID      string    `gorm:"column:xendit_sub_account_id;size:100"`
-	XenditKYCStatus  string    `gorm:"column:xendit_kyc_status;size:30"`
+	XenditKYCStatus  string    `gorm:"column:xendit_kyc_status;size:30;default:PENDING"`
 	StatusBerlanggan string    `gorm:"column:status_berlangganan;size:20;default:AKTIF"`
 	CreatedAt        time.Time `gorm:"column:created_at"`
 	UpdatedAt        time.Time `gorm:"column:updated_at"`

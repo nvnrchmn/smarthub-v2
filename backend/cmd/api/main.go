@@ -39,7 +39,7 @@ func main() {
 	wilayahHandler := wilayah.NewHandler(wilayahService)
 
 	wargaRepo := warga.NewRepository(db.SQL)
-	wargaService := warga.NewService(wargaRepo)
+	wargaService := warga.NewService(wargaRepo, enc)
 	wargaHandler := warga.NewHandler(wargaService)
 
 	app := fiber.New(fiber.Config{
@@ -62,9 +62,16 @@ func main() {
 	// Public routes
 	app.Post("/auth/login", authHandler.Login)
 	app.Post("/auth/register", authHandler.Register)
+	app.Post("/auth/register-pengurus", authHandler.RegisterPengurus)
+	app.Post("/auth/register-invite", authHandler.RegisterWithInvite)
 
 	// Protected routes
 	mw := middleware.NewAuthMiddleware(j)
+
+	// Invite code management
+	app.Post("/auth/invite-codes", mw.AuthRequired, authHandler.GenerateInviteCode)
+	app.Get("/auth/invite-codes", mw.AuthRequired, authHandler.ListInviteCodes)
+	app.Delete("/auth/invite-codes/:id", mw.AuthRequired, authHandler.DeactivateInviteCode)
 	app.Get("/me", mw.AuthRequired, func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"user_id":   c.Locals("user_id"),

@@ -42,9 +42,11 @@ type wargaRequest struct {
 }
 
 func (h *Handler) GetWargaByTenant(c fiber.Ctx) error {
-	// Tenant diambil dari JWT, bukan query param
 	tenantID := c.Locals("tenant_id").(int)
-	wargas, err := h.service.GetWargaByTenant(tenantID)
+	userID := c.Locals("user_id").(int)
+	role := c.Locals("role").(string)
+
+	wargas, err := h.service.GetWargaByTenant(tenantID, userID, role)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -70,7 +72,6 @@ func (h *Handler) CreateWarga(c fiber.Ctx) error {
 	if req.NamaLengkap == "" {
 		return c.Status(400).JSON(fiber.Map{"error": "nama lengkap wajib diisi"})
 	}
-	// Default sesuai enum DB bila tidak dikirim
 	if req.StatusHubungan == "" {
 		req.StatusHubungan = "Lainnya"
 	}
@@ -109,8 +110,10 @@ func (h *Handler) CreateWarga(c fiber.Ctx) error {
 func (h *Handler) UpdateWarga(c fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	tenantID := c.Locals("tenant_id").(int)
+	userID := c.Locals("user_id").(int)
+	role := c.Locals("role").(string)
 
-	existing, err := h.service.GetWargaByID(id)
+	existing, err := h.service.GetWargaByID(id, userID, role)
 	if err != nil || existing.TenantID != tenantID {
 		return c.Status(404).JSON(fiber.Map{"error": "warga tidak ditemukan"})
 	}
@@ -119,8 +122,6 @@ func (h *Handler) UpdateWarga(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "request tidak valid"})
 	}
-	// Overlay: hanya field yang dikirim yang diubah; sisanya pertahankan nilai
-	// existing (cek status_hubungan dll adalah enum — string kosong = data truncated)
 	if req.NamaLengkap != "" {
 		existing.NamaLengkap = req.NamaLengkap
 	}
@@ -145,8 +146,10 @@ func (h *Handler) UpdateWarga(c fiber.Ctx) error {
 func (h *Handler) DeleteWarga(c fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	tenantID := c.Locals("tenant_id").(int)
+	userID := c.Locals("user_id").(int)
+	role := c.Locals("role").(string)
 
-	existing, err := h.service.GetWargaByID(id)
+	existing, err := h.service.GetWargaByID(id, userID, role)
 	if err != nil || existing.TenantID != tenantID {
 		return c.Status(404).JSON(fiber.Map{"error": "warga tidak ditemukan"})
 	}

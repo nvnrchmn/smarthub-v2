@@ -19,14 +19,6 @@ func NewAES() *AES {
 	if key == "" {
 		key = "default-aes-key-32bytes-long-key!" // fallback dev
 	}
-	return &AES{key: []byte(key)}
-}
-
-func NewAES() *AES {
-	key := os.Getenv("AES_KEY")
-	if key == "" {
-		key = "default-aes-key-32bytes-long-key!" // fallback dev
-	}
 	if len(key) != 32 {
 		panic("AES_KEY must be exactly 32 bytes")
 	}
@@ -47,21 +39,12 @@ func (a *AES) OpenSealedValue(ciphertext string) (*string, error) {
 
 // DefaultAESSealedValue digunakan saat key kosong (di-service langsung)
 func DefaultAESSealedValue() []byte {
-	// fallback key
 	key := "default-aes-key-32bytes!"
 	return []byte(key)
 }
 
-// SealedValue via object langsung
-func (a *AES) SealedValue(plaintext string) (*string, error) {
-	c, err := a.Encrypt(plaintext)
-	return &c, err
-}
-
-func (a *AES) OpenSealedValue(ciphertext string) (*string, error) {
-	p, err := a.Decrypt(ciphertext)
-	return &p, err
-}
+// Encrypt plaintext → base64 ciphertext
+func (a *AES) Encrypt(plaintext string) (string, error) {
 	block, err := aes.NewCipher(a.key)
 	if err != nil {
 		return "", err
@@ -78,6 +61,7 @@ func (a *AES) OpenSealedValue(ciphertext string) (*string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
+// Decrypt base64 ciphertext → plaintext
 func (a *AES) Decrypt(ciphertext string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
