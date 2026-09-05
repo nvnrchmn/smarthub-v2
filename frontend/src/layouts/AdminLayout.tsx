@@ -13,7 +13,7 @@ const adminLinks: { path: string; label: string; icon: IconName }[] = [
 export function AdminLayout() {
   const { pathname } = useLocation()
   return (
-    <div className="min-h-screen bg-surface md:flex">
+    <div className="h-dvh flex flex-col bg-surface md:flex-row">
       <aside className="hidden w-56 border-r border-border bg-surface-card p-4 md:block">
         <h2 className="mb-4 text-lg font-bold text-text-primary">Super Admin</h2>
         <nav className="space-y-1">
@@ -28,7 +28,7 @@ export function AdminLayout() {
           })}
         </nav>
       </aside>
-      <main key={pathname} className="page-enter flex-1 p-4 pb-28 md:p-6 md:pb-12">
+      <main key={pathname} className="page-enter flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
         <Outlet />
       </main>
       <BottomBar links={adminLinks} />

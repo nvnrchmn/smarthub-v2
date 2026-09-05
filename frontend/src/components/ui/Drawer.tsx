@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 
 interface Props {
@@ -16,24 +17,32 @@ interface Props {
  * - Terpusat vertical & horizontal, tidak tertutup bottom nav
  * - Safe area untuk notched phones
  * - Animasi scale + fade yang halus
+ * - Renders via portal ke document.body (independen dari layout)
  */
 export function Drawer({ open, onClose, title, subtitle, children }: Props) {
   useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
+    const main = document.querySelector('main')
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      if (main) main.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+      if (main) main.style.overflow = ''
+    }
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = ''
+      if (main) main.style.overflow = ''
       window.removeEventListener('keydown', onKey)
     }
   }, [open, onClose])
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overscroll-none p-4 pb-20 sm:p-6 sm:pb-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center overscroll-none p-4"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -68,17 +77,15 @@ export function Drawer({ open, onClose, title, subtitle, children }: Props) {
           </button>
         </header>
 
-        {/* Scrollable content — height follows content, max 60vh/65vh */}
+        {/* Scrollable content */}
         <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-1"
-          style={{
-            maxHeight: 'min(60dvh, 24rem)',
-            WebkitOverflowScrolling: 'touch',
-          }}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5"
+          style={{ maxHeight: 'min(60dvh, 28rem)', WebkitOverflowScrolling: 'touch' }}
         >
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
