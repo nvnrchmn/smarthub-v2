@@ -20,6 +20,7 @@ import { WargaDashboard } from './pages/warga/Dashboard'
 import { TagihanSayaPage } from './pages/warga/TagihanSayaPage'
 import { ForumWargaPage } from './pages/warga/ForumPage'
 import { LapakWargaPage } from './pages/warga/LapakPage'
+import { WargaPengaturanPage } from './pages/warga/PengaturanPage'
 
 // RT pages
 import { RTDashboard } from './pages/rt/Dashboard'
@@ -28,6 +29,7 @@ import { RTWargaPage } from './pages/rt/WargaPage'
 import { RTTagihanPage } from './pages/rt/TagihanPage'
 import { ForumRT } from './pages/rt/ForumRT'
 import { LapakRT } from './pages/rt/LapakRT'
+import { RTPengaturanPage } from './pages/rt/PengaturanPage'
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/Dashboard'
@@ -54,6 +56,7 @@ export default function App() {
           <Route path="/app/tagihan" element={<TagihanSayaPage />} />
           <Route path="/app/forum" element={<ForumWargaPage />} />
           <Route path="/app/lapak" element={<LapakWargaPage />} />
+          <Route path="/app/pengaturan" element={<WargaPengaturanPage />} />
         </Route>
 
         {/* Ketua RT */}
@@ -64,6 +67,7 @@ export default function App() {
           <Route path="/rt/tagihan" element={<RTTagihanPage />} />
           <Route path="/rt/forum" element={<ForumRT />} />
           <Route path="/rt/lapak" element={<LapakRT />} />
+          <Route path="/rt/pengaturan" element={<RTPengaturanPage />} />
         </Route>
 
         {/* Super Admin */}

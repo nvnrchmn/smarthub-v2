@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { ThemeToggle } from '../../components/ui/ThemeToggle'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -37,7 +36,6 @@ export function RegisterPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-4 py-8">
-      <ThemeToggle />
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-text-primary">Daftar</h1>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { fmt } from '../../lib/utils'
 import { useAuth } from '../../context/AuthContext'
@@ -20,8 +20,7 @@ const labelBulan = (p: string) => {
 }
 
 export function WargaDashboard() {
-  const { user, logout } = useAuth()
-  const nav = useNavigate()
+  const { user } = useAuth()
   const [rumah, setRumah] = useState<Rumah[]>([])
   const [warga, setWarga] = useState<WargaRow[]>([])
   const [tagihan, setTagihan] = useState<Tagihan[]>([])
@@ -69,18 +68,11 @@ export function WargaDashboard() {
       <header className="mb-4 flex items-center gap-3">
         <Avatar name={diriku?.nama_lengkap ?? 'Warga'} />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-bold text-text-primary">Halo, {nama}! 👋</h1>
+          <h1 className="truncate text-lg font-bold text-text-primary">Halo, {nama}</h1>
           <p className="truncate text-xs text-text-secondary">
             {idRumahKu ? `Rumah ${rumah.find((r) => r.id_rumah === idRumahKu)?.nomor_rumah ?? ''} — ${labelBulan(BULAN_INI)}` : labelBulan(BULAN_INI)}
           </p>
         </div>
-        <button
-          onClick={() => { logout(); nav('/') }}
-          aria-label="Keluar"
-          className="grid h-11 w-11 place-items-center rounded-xl border border-border bg-surface-card text-text-secondary hover:text-danger"
-        >
-          <Icon name="logout" size={18} />
-        </button>
       </header>
 
       {loading ? (

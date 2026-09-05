@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { ThemeToggle } from '../../components/ui/ThemeToggle'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -35,7 +34,6 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center px-4">
-      <ThemeToggle />
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-text-primary">Masuk</h1>

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Icon, type IconName } from '../components/ui/Icon'
-import { ThemeToggle } from '../components/ui/ThemeToggle'
+import { BottomBar } from '../components/ui/BottomBar'
 import { cn } from '../lib/utils'
 
 const adminLinks: { path: string; label: string; icon: IconName }[] = [
@@ -9,31 +9,6 @@ const adminLinks: { path: string; label: string; icon: IconName }[] = [
   { path: '/admin/users', label: 'Users', icon: 'users' },
   { path: '/admin/settings', label: 'Pengaturan', icon: 'settings' },
 ]
-
-function BottomBar({ links }: { links: { path: string; label: string; icon: IconName }[] }) {
-  const { pathname } = useLocation()
-  return (
-    <nav aria-label="Navigasi utama" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface-card md:hidden">
-      <div className="flex items-stretch justify-around pb-[env(safe-area-inset-bottom)]">
-        {links.slice(0, 5).map((l) => {
-          const active = pathname === l.path
-          return (
-            <Link
-              key={l.path}
-              to={l.path}
-              aria-label={l.label}
-              aria-current={active ? 'page' : undefined}
-              className={cn('flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] transition-colors', active ? 'text-primary' : 'text-text-secondary')}
-            >
-              <Icon name={l.icon} size={20} />
-              <span className={cn(active ? 'opacity-100' : 'opacity-0')}>{l.label}</span>
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
-  )
-}
 
 export function AdminLayout() {
   const { pathname } = useLocation()
@@ -52,14 +27,10 @@ export function AdminLayout() {
             )
           })}
         </nav>
-        <div className="mt-6 border-t border-border pt-3">
-          <ThemeToggle fixed={false} withLabel />
-        </div>
       </aside>
-      <main key={pathname} className="page-enter flex-1 p-4 md:p-6 md:pb-10">
+      <main key={pathname} className="page-enter flex-1 p-4 pb-28 md:p-6 md:pb-12">
         <Outlet />
       </main>
-      <ThemeToggle className="md:hidden" />
       <BottomBar links={adminLinks} />
     </div>
   )

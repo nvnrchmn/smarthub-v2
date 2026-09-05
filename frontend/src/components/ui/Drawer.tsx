@@ -28,12 +28,12 @@ export function Drawer({ open, onClose, title, subtitle, children }: Props) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="a-fade absolute inset-0 bg-black/45" onClick={onClose} aria-hidden />
-      <div className="sheet-up relative flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-surface-card shadow-2xl sm:max-h-[85vh] sm:max-w-lg sm:rounded-2xl">
+      <div className="sheet-up relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-surface-card shadow-2xl sm:max-h-[85vh] sm:max-w-lg sm:rounded-2xl">
         {/* handle tarik (visual, mobile) */}
-        <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden>
+        <div className="flex shrink-0 justify-center pt-2.5 sm:hidden" aria-hidden>
           <span className="h-1 w-10 rounded-full bg-text-disabled/40" />
         </div>
-        <header className="flex items-start justify-between gap-3 px-5 pb-2 pt-3">
+        <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-2 pt-3">
           <div>
             <h3 className="text-base font-semibold text-text-primary">{title}</h3>
             {subtitle && <p className="mt-0.5 text-xs text-text-secondary">{subtitle}</p>}
@@ -42,7 +42,7 @@ export function Drawer({ open, onClose, title, subtitle, children }: Props) {
             <Icon name="x" size={16} />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))]" style={{ WebkitOverflowScrolling: 'touch' }}>{children}</div>
       </div>
     </div>
   )
