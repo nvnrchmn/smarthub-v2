@@ -5,6 +5,7 @@ export interface User {
   role: string
   tenant_id: number
   nama?: string
+  user_status?: string
 }
 
 interface AuthContextType {
@@ -16,9 +17,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-// Baca dari localStorage SECARA SINKRON saat init — mencegah flash redirect ke
-// /login tiap reload (sebelumnya pakai useEffect → render pertama token null →
-// ProtectedRoute pindah ke /login sebelum state sempat dipulihkan).
 function loadUser(): User | null {
   try {
     const raw = localStorage.getItem('user')

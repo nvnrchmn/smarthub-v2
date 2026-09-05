@@ -14,6 +14,8 @@ import { LandingPage } from './pages/public/LandingPage'
 import { LoginPage } from './pages/public/LoginPage'
 import { RegisterPage } from './pages/public/RegisterPage'
 import { RegisterPengurusPage } from './pages/public/RegisterPengurusPage'
+import { GabungRTPage } from './pages/public/GabungRTPage'
+import { PendingApprovalPage } from './pages/public/PendingApprovalPage'
 import { UnauthorizedPage } from './pages/public/UnauthorizedPage'
 
 // Warga pages
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/register-pengurus" element={<RegisterPengurusPage />} />
+          <Route path="/gabung-rt" element={<GabungRTPage />} />
+          <Route path="/pending-approval" element={<PendingApprovalPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
         </Route>
 
