@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
-import { fmt } from '../../lib/utils'
+import { fmt, cn } from '../../lib/utils'
+import { Icon } from '../../components/ui/Icon'
+import { BadgeStatus, labelBulan, normalStatus } from '../../components/tagihan/BadgeStatus'
+import { Skeleton } from '../../components/ui/bento'
 
 interface Tagihan {
   id_tagihan: number
   id_rumah: number
   periode_bulan_tahun: string
   total_nominal: number
-  status_pembayaran: 'PAID' | 'PENDING' | 'OVERDUE' | 'EXPIRED'
-  xendit_payment_url?: string | null
+  status_pembayaran: string
 }
+
+type Filter = 'SEMUA' | 'AKTIF' | 'PAID'
 
 export function TagihanSayaPage() {
   const { user } = useAuth()
@@ -20,7 +24,8 @@ export function TagihanSayaPage() {
   const [loading, setLoading] = useState(true)
   const [bayarId, setBayarId] = useState<number | null>(null)
   const [err, setErr] = useState('')
-  const notice = params.get('status') === 'success' ? 'Pembayaran berhasil diproses.' : ''
+  const [filter, setFilter] = useState<Filter>('SEMUA')
+  const notice = params.get('status') === 'success' ? 'Pembayaran diterima — terima kasih!' : params.get('status') === 'cancel' ? 'Pembayaran dibatalkan. Kamu bisa mencoba lagi kapan saja.' : ''
 
   const tenantId = user?.tenant_id ?? 1
 
@@ -28,11 +33,11 @@ export function TagihanSayaPage() {
     setLoading(true)
     api(`/keuangan/tagihan?tenant_id=${tenantId}`)
       .then((d) => setTagihans(Array.isArray(d) ? d : []))
-      .catch(() => {})
+      .catch(() => setErr('Gagal memuat tagihan. Tarik untuk coba lagi.'))
       .finally(() => setLoading(false))
   }
-
   useEffect(load, [tenantId])
+  useEffect(() => { if (notice) setErr('') }, [notice])
 
   const bayar = async (t: Tagihan) => {
     setErr('')
@@ -51,65 +56,138 @@ export function TagihanSayaPage() {
     }
   }
 
-  const badge = (s: string) => {
-    if (s === 'PAID') return <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Lunas</span>
-    if (s === 'EXPIRED') return <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">Kedaluwarsa</span>
-    if (s === 'OVERDUE') return <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Terlambat</span>
-    return <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">Belum Bayar</span>
-  }
+  const aktif = useMemo(() => tagihans.filter((t) => { const s = normalStatus(t.status_pembayaran); return s === 'PENDING' || s === 'OVERDUE' }), [tagihans])
+  const terlambat = useMemo(() => tagihans.filter((t) => normalStatus(t.status_pembayaran) === 'OVERDUE'), [tagihans])
+  const totalAktif = useMemo(() => aktif.reduce((a, t) => a + t.total_nominal, 0), [aktif])
+  const lunas = useMemo(() => tagihans.filter((t) => normalStatus(t.status_pembayaran) === 'PAID'), [tagihans])
+
+  const daftar = useMemo(() => {
+    if (filter === 'AKTIF') return [...aktif].sort((a, b) => (normalStatus(a.status_pembayaran) === 'OVERDUE' ? -1 : 1) - (normalStatus(b.status_pembayaran) === 'OVERDUE' ? -1 : 1))
+    if (filter === 'PAID') return lunas
+    return tagihans
+  }, [filter, aktif, lunas, tagihans])
+
+  const chips: { k: Filter; label: string; jml: number }[] = [
+    { k: 'SEMUA', label: 'Semua', jml: tagihans.length },
+    { k: 'AKTIF', label: 'Perlu dibayar', jml: aktif.length },
+    { k: 'PAID', label: 'Lunas', jml: lunas.length },
+  ]
 
   return (
-    <div className="mx-auto max-w-lg px-4 pt-4 pb-24">
+    <div className="page-enter mx-auto max-w-lg px-4 pt-4">
       <header className="mb-4">
-        <h1 className="text-xl font-bold text-text-primary">Tagihan Iuran</h1>
-        <p className="text-xs text-text-secondary">Bayar iuran bulanan dengan mudah</p>
+        <h1 className="text-xl font-bold text-text-primary">Tagihan</h1>
+        <p className="text-sm text-text-secondary">Iuran warga — bayar cepat via Xendit</p>
       </header>
 
+      {/* Hero: total tagihan aktif */}
+      <section className="relative mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-[#0E4A30] p-5 text-white shadow-lg shadow-primary/25">
+        <div aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
+        <p className="text-[13px] font-medium text-white/80">Total tagihan perlu dibayar</p>
+        <p className="mt-1 text-[34px] font-bold leading-tight tracking-tight">{fmt(totalAktif)}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+            <Icon name="clock" size={13} /> {aktif.length} belum dibayar
+          </span>
+          {terlambat.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-danger px-3 py-1 text-xs font-medium text-white">
+              <Icon name="alert" size={13} /> {terlambat.length} terlambat
+            </span>
+          )}
+          {lunas.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+              <Icon name="check" size={13} /> {lunas.length} lunas
+            </span>
+          )}
+        </div>
+      </section>
+
       {notice && (
-        <div role="alert" className="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">{notice}</div>
+        <div role="status" className={cn('mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm', notice.startsWith('Pembayaran diterima') ? 'border-status-paid/30 bg-status-paid-bg text-status-paid' : 'border-border bg-surface-card text-text-secondary')}>
+          <Icon name={notice.startsWith('Pembayaran diterima') ? 'check' : 'clock'} size={16} className="mt-0.5 shrink-0" />
+          {notice}
+        </div>
       )}
-      {err && (
-        <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>
+      {err && !notice && (
+        <div role="alert" className="mb-4 flex items-start gap-2.5 rounded-xl border border-status-overdue/30 bg-status-overdue-bg px-4 py-3 text-sm text-status-overdue">
+          <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
+          {err}
+        </div>
       )}
 
-      <div className="space-y-3">
-        {loading && <p className="text-sm text-text-secondary">Memuat…</p>}
-        {!loading && tagihans.length === 0 && <p className="text-sm text-text-secondary">Belum ada tagihan untuk periode ini.</p>}
-        {tagihans.map((t) => (
-          <div
-            key={t.id_tagihan}
-            className={`rounded-2xl border-l-4 bg-surface-card p-4 ${
-              t.status_pembayaran === 'PAID' ? 'border-green-600' : 'border-amber-500'
-            }`}
+      {/* Filter */}
+      <div className="mb-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {chips.map((c) => (
+          <button
+            key={c.k}
+            onClick={() => setFilter(c.k)}
+            aria-pressed={filter === c.k}
+            className={cn(
+              'flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-medium transition-colors',
+              filter === c.k ? 'bg-text-primary text-surface' : 'bg-surface-card text-text-secondary ring-1 ring-inset ring-border'
+            )}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-text-secondary">Periode {t.periode_bulan_tahun}</p>
-                <p className="text-2xl font-bold text-text-primary">{fmt(t.total_nominal)}</p>
-              </div>
-              {badge(t.status_pembayaran)}
-            </div>
-            {t.status_pembayaran === 'PENDING' && (
-              <button
-                onClick={() => bayar(t)}
-                disabled={bayarId === t.id_tagihan}
-                className="mt-3 min-h-[44px] w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-white hover:bg-primary/90 disabled:opacity-60"
-              >
-                {bayarId === t.id_tagihan ? 'Menyiapkan pembayaran…' : 'Bayar Sekarang'}
-              </button>
-            )}
-            {t.status_pembayaran === 'EXPIRED' && (
-              <button
-                onClick={() => bayar(t)}
-                disabled={bayarId === t.id_tagihan}
-                className="mt-3 min-h-[44px] w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-white hover:bg-primary/90 disabled:opacity-60"
-              >
-                {bayarId === t.id_tagihan ? 'Menyiapkan pembayaran…' : 'Bayar Ulang'}
-              </button>
-            )}
-          </div>
+            {c.label}
+            <span className={cn('rounded-full px-1.5 text-[10px] font-bold', filter === c.k ? 'bg-white/20 text-inherit' : 'bg-text-disabled/10 text-text-secondary')}>{c.jml}</span>
+          </button>
         ))}
       </div>
+
+      {/* Daftar */}
+      {loading ? (
+        <div className="space-y-2.5">
+          <Skeleton className="h-[104px] rounded-2xl" />
+          <Skeleton className="h-[104px] rounded-2xl" />
+        </div>
+      ) : daftar.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-text-disabled/10 text-text-secondary">
+            <Icon name="wallet" size={20} />
+          </div>
+          <p className="font-semibold text-text-primary">{filter === 'PAID' ? 'Belum ada tagihan lunas' : 'Tidak ada tagihan aktif'}</p>
+          <p className="mt-1 text-sm text-text-secondary">{filter === 'AKTIF' ? 'Semua tagihanmu sudah terbayar.' : 'Tagihan baru akan muncul saat pengurus generate iuran bulanan.'}</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface-card">
+          {daftar.map((t) => {
+            const s = normalStatus(t.status_pembayaran)
+            const bolehBayar = s === 'PENDING' || s === 'OVERDUE' || s === 'EXPIRED'
+            const sibuk = bayarId === t.id_tagihan
+            return (
+              <li key={t.id_tagihan} className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-text-disabled/8 text-text-secondary">
+                      <Icon name="calendar" size={17} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-semibold text-text-primary">{labelBulan(t.periode_bulan_tahun)}</p>
+                      <p className="text-xs text-text-secondary">Iuran warga bulanan</p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className={cn('text-[17px] font-bold leading-tight', s === 'PAID' ? 'text-text-secondary line-through decoration-text-disabled/40' : 'text-text-primary')}>{fmt(t.total_nominal)}</p>
+                    <div className="mt-1"><BadgeStatus status={s} /></div>
+                  </div>
+                </div>
+                {bolehBayar && (
+                  <button
+                    onClick={() => bayar(t)}
+                    disabled={sibuk}
+                    className="mt-3 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-semibold text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[.99] disabled:opacity-60"
+                  >
+                    <Icon name="wallet" size={16} />
+                    {sibuk ? 'Menyiapkan pembayaran…' : s === 'EXPIRED' ? 'Bayar Ulang' : 'Bayar Sekarang'}
+                  </button>
+                )}
+                {s === 'PAID' && <p className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-status-paid"><Icon name="check" size={13} /> Pembayaran sudah diterima</p>}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      <p className="mt-4 text-center text-[11px] text-text-secondary">Pembayaran diproses secara aman oleh Xendit — kartu, QRIS, VA, e-wallet.</p>
     </div>
   )
 }
