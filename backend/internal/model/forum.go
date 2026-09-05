@@ -9,6 +9,7 @@ type Thread struct {
 	TipeThread  string    `gorm:"column:tipe_thread;size:20;default:Diskusi" json:"tipe_thread"`
 	Judul       string    `gorm:"column:judul;size:255;not null" json:"judul"`
 	Konten      string    `gorm:"column:konten;not null" json:"konten"`
+	FotoURL     string    `gorm:"column:foto_url" json:"foto_url"`
 	CreatedAt   time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"column:updated_at" json:"updated_at"`
 	// NamaPenulis diisi saat read (join warga), tidak dipetakan ke kolom DB.

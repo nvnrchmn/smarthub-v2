@@ -237,7 +237,7 @@ export function LapakWargaPage() {
       <Drawer open={openTambah} onClose={() => setOpenTambah(false)} title="Jual di Lapak" subtitle="Produk tampil setelah disetujui pengurus RT">
         <div className="space-y-4">
           <div>
-            <label htmlFor="lp-nama" className="mb-1.5 block text-xs font-semibold text-text-secondary">
+            <label htmlFor="lp-nama" className="mb-2 block text-[13px] font-semibold text-text-secondary">
               NAMA PRODUK / JASA *
             </label>
             <input
@@ -250,7 +250,7 @@ export function LapakWargaPage() {
             />
           </div>
           <div>
-            <label htmlFor="lp-desk" className="mb-1.5 block text-xs font-semibold text-text-secondary">
+            <label htmlFor="lp-desk" className="mb-2 block text-[13px] font-semibold text-text-secondary">
               DESKRIPSI
             </label>
             <textarea
@@ -262,34 +262,24 @@ export function LapakWargaPage() {
               className="w-full resize-none rounded-2xl border border-border bg-surface px-4 py-3 text-[15px] text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="lp-harga" className="mb-1.5 block text-xs font-semibold text-text-secondary">
-                HARGA (Rp)
-              </label>
-              <input
-                id="lp-harga"
-                value={form.harga}
-                onChange={(e) => setForm({ ...form, harga: e.target.value.replace(/[^\d]/g, '') })}
-                inputMode="numeric"
-                placeholder="25000"
-                className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label htmlFor="lp-foto" className="mb-1.5 block text-xs font-semibold text-text-secondary">
-                FOTO
-              </label>
-              <FotoField value={form.foto} onChange={(v) => setForm({ ...form, foto: v })} />
-              <p className="mt-2 text-[11px] text-text-secondary">Unggah dari galeri, atau tempel tautan gambar di bawah.</p>
-              <input
-                id="lp-foto"
-                value={form.foto}
-                onChange={(e) => setForm({ ...form, foto: e.target.value })}
-                placeholder="https://… atau /uploads/…"
-                className="mt-2 h-12 w-full rounded-2xl border border-border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
+          <div>
+            <label htmlFor="lp-harga" className="mb-2 block text-[13px] font-semibold text-text-secondary">
+              HARGA (Rp)
+            </label>
+            <input
+              id="lp-harga"
+              value={form.harga}
+              onChange={(e) => setForm({ ...form, harga: e.target.value.replace(/[^\d]/g, '') })}
+              inputMode="numeric"
+              placeholder="25000 — kosongkan bila gratis"
+              className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-[13px] font-semibold text-text-secondary">
+              FOTO PRODUK
+            </label>
+            <FotoField value={form.foto} onChange={(v) => setForm({ ...form, foto: v })} />
           </div>
           {pesan && <p className="text-sm text-danger">{pesan}</p>}
           <button

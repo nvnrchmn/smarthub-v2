@@ -6,7 +6,7 @@ export function ForumWargaPage() {
       <header className="mb-1">
         <h1 className="text-xl font-bold text-text-primary">Forum Warga</h1>
       </header>
-      <ForumFeed canAnnounce={false} />
+      <ForumFeed canAnnounce={false} basePath="/app/forum" />
     </div>
   )
 }

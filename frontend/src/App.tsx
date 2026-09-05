@@ -21,6 +21,7 @@ import { TagihanSayaPage } from './pages/warga/TagihanSayaPage'
 import { ForumWargaPage } from './pages/warga/ForumPage'
 import { LapakWargaPage } from './pages/warga/LapakPage'
 import { WargaPengaturanPage } from './pages/warga/PengaturanPage'
+import { ForumDetailPage } from './pages/forum/ForumDetailPage'
 
 // RT pages
 import { RTDashboard } from './pages/rt/Dashboard'
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/app" element={<WargaDashboard />} />
           <Route path="/app/tagihan" element={<TagihanSayaPage />} />
           <Route path="/app/forum" element={<ForumWargaPage />} />
+          <Route path="/app/forum/:id" element={<ForumDetailPage />} />
           <Route path="/app/lapak" element={<LapakWargaPage />} />
           <Route path="/app/pengaturan" element={<WargaPengaturanPage />} />
         </Route>
@@ -66,6 +68,7 @@ export default function App() {
           <Route path="/rt/warga" element={<RTWargaPage />} />
           <Route path="/rt/tagihan" element={<RTTagihanPage />} />
           <Route path="/rt/forum" element={<ForumRT />} />
+          <Route path="/rt/forum/:id" element={<ForumDetailPage />} />
           <Route path="/rt/lapak" element={<LapakRT />} />
           <Route path="/rt/pengaturan" element={<RTPengaturanPage />} />
         </Route>

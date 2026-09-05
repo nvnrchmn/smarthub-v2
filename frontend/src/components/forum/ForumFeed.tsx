@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../context/AuthContext'
-import { Drawer } from '../ui/Drawer'
 import { Icon } from '../ui/Icon'
-import { MentionArea, NamaWarga, renderRich, timeAgo, warnaInisial, inisial } from './mention'
+import { Drawer } from '../ui/Drawer'
+import { FotoField } from '../ui/FotoField'
+import { MentionArea, renderRich, timeAgo, inisial, warnaInisial, type NamaWarga } from './mention'
 
 interface Thread {
   id_thread: number
@@ -12,69 +14,55 @@ interface Thread {
   tipe_thread: string
   judul: string
   konten: string
+  foto_url?: string | null
   created_at: string
   nama_penulis?: string
   komentar_count?: number
 }
 
-interface KomentarRow {
-  id_komentar: number
-  id_user: number
-  komentar: string
+interface Notif {
+  id_notifikasi: number
+  tipe: string
+  id_ref: number | null
+  pesan: string
   created_at: string
-  nama_penulis?: string
-}
-
-function AvatarWarga({ nama, size = 9 }: { nama: string; size?: number }) {
-  return (
-    <span
-      className={cn('grid shrink-0 place-items-center rounded-full font-bold text-white', size === 9 ? 'h-9 w-9 text-xs' : 'h-8 w-8 text-[11px]')}
-      style={{ backgroundColor: warnaInisial(nama || '?') }}
-    >
-      {inisial(nama || '?')}
-    </span>
-  )
 }
 
 interface Props {
   canAnnounce: boolean
+  basePath: string
 }
 
-/* Feed forum ala Instagram: kartu thread → drawer detail berisi komentar,
-   @Mention warga satu tenant saat menulis thread maupun komentar. */
-export function ForumFeed({ canAnnounce }: Props) {
+export function ForumFeed({ canAnnounce, basePath }: Props) {
+  const nav = useNavigate()
   const { user } = useAuth()
+
   const [threads, setThreads] = useState<Thread[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+
   const [namaWarga, setNamaWarga] = useState<NamaWarga[]>([])
 
-  const [openDetail, setOpenDetail] = useState<Thread | null>(null)
-  const [detail, setDetail] = useState<{ thread: Thread; komentar: KomentarRow[] } | null>(null)
-  const [detLoading, setDetLoading] = useState(false)
-
   const [openBuat, setOpenBuat] = useState(false)
+  const [tipe, setTipe] = useState('Diskusi')
   const [judul, setJudul] = useState('')
   const [konten, setKonten] = useState('')
-  const [tipe, setTipe] = useState<'Diskusi' | 'Pengumuman'>('Diskusi')
+  const [foto, setFoto] = useState('')
   const [kirim, setKirim] = useState(false)
   const [pesan, setPesan] = useState('')
 
-  const [komentar, setKomentar] = useState('')
-  const [komenLoading, setKomenLoading] = useState(false)
-
-  const [notifList, setNotifList] = useState<Array<{ id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }>>([])
+  const [notifList, setNotifList] = useState<Notif[]>([])
   const [notifUnread, setNotifUnread] = useState(0)
   const [openNotif, setOpenNotif] = useState(false)
 
   const muat = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await api('/forum')
+      const data = await api<Thread[]>('/forum')
       setThreads(data)
       setErr('')
     } catch {
-      setErr('Gagal memuat forum. Tarik ke bawah untuk coba lagi.')
+      setErr('Gagal memuat forum.')
     } finally {
       setLoading(false)
     }
@@ -82,7 +70,7 @@ export function ForumFeed({ canAnnounce }: Props) {
 
   const muatNotif = useCallback(async () => {
     try {
-      const d = await api<{ list: { id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }[]; unread: number }>('/notifikasi')
+      const d = await api<{ list: Notif[]; unread: number }>('/notifikasi')
       setNotifList(d.list)
       setNotifUnread(d.unread)
     } catch {
@@ -90,44 +78,15 @@ export function ForumFeed({ canAnnounce }: Props) {
     }
   }, [])
 
-  const bukaNotif = async () => {
-    setOpenNotif(true)
-    try {
-      const d = await api<{ list: { id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }[]; unread: number }>('/notifikasi')
-      setNotifList(d.list)
-      if (d.unread > 0) {
-        await api('/notifikasi/read-all', { method: 'PUT' })
-        setNotifUnread(0)
-      }
-    } catch {
-      /* abaikan */
-    }
-  }
-
-  const bukaDariNotif = async (n: { id_notifikasi: number; tipe: string; id_ref: number; pesan: string; created_at: string }) => {
-    setOpenNotif(false)
-    if (!n.id_ref) return
-    try {
-      const d = await api<{ thread: Thread }>(`/forum/${n.id_ref}`)
-      if (d?.thread) void bukaDetail(d.thread)
-    } catch {
-      /* abaikan */
-    }
-  }
-
   useEffect(() => {
     muat()
     muatNotif()
-    api('/warga')
-      .then((rows: Array<{ id_user: number | null; nama_lengkap: string }>) =>
-        setNamaWarga(
-          rows
-            .filter((r) => r.id_user && r.nama_lengkap)
-            .map((r) => ({ id_user: Number(r.id_user), nama_lengkap: r.nama_lengkap }))
-        )
+    api<Array<{ id_user: number | null; nama_lengkap: string }>>('/warga')
+      .then((rows) =>
+        setNamaWarga(rows.filter((r) => r.id_user && r.nama_lengkap).map((r) => ({ id_user: Number(r.id_user), nama_lengkap: r.nama_lengkap })))
       )
       .catch(() => {})
-  }, [muat])
+  }, [muat, muatNotif])
 
   const roleLabel = user?.role === 'ketua_rt' ? 'Pengurus RT' : user?.role === 'super_admin' ? 'Administrator' : 'Warga'
   const saya = user?.id ?? 0
@@ -140,20 +99,6 @@ export function ForumFeed({ canAnnounce }: Props) {
     [threads, saya, roleLabel]
   )
 
-  const bukaDetail = async (t: Thread) => {
-    setOpenDetail(t)
-    setDetLoading(true)
-    setKomentar('')
-    try {
-      const d = await api(`/forum/${t.id_thread}`)
-      setDetail(d)
-    } catch {
-      setDetail({ thread: t, komentar: [] })
-    } finally {
-      setDetLoading(false)
-    }
-  }
-
   const kirimThread = async () => {
     if (!judul.trim() || !konten.trim()) {
       setPesan('Judul dan isi harus diisi.')
@@ -162,11 +107,15 @@ export function ForumFeed({ canAnnounce }: Props) {
     setKirim(true)
     setPesan('')
     try {
-      await api('/forum', { method: 'POST', body: JSON.stringify({ judul: judul.trim(), konten: konten.trim(), tipe_thread: tipe }) })
+      await api('/forum', {
+        method: 'POST',
+        body: JSON.stringify({ judul: judul.trim(), konten: konten.trim(), tipe_thread: tipe, foto_url: foto || '' }),
+      })
       setOpenBuat(false)
       setJudul('')
       setKonten('')
       setTipe('Diskusi')
+      setFoto('')
       muat()
       muatNotif()
     } catch {
@@ -176,27 +125,29 @@ export function ForumFeed({ canAnnounce }: Props) {
     }
   }
 
-  const kirimKomentar = async () => {
-    if (!openDetail || !komentar.trim()) return
-    setKomenLoading(true)
+  const bukaNotif = async () => {
+    setOpenNotif(true)
     try {
-      await api(`/forum/${openDetail.id_thread}/komentar`, { method: 'POST', body: JSON.stringify({ komentar: komentar.trim() }) })
-      setKomentar('')
-      const d = await api(`/forum/${openDetail.id_thread}`)
-      setDetail(d)
-      muat()
-      muatNotif()
+      const d = await api<{ list: Notif[]; unread: number }>('/notifikasi')
+      setNotifList(d.list)
+      if (d.unread > 0) {
+        await api('/notifikasi/read-all', { method: 'PUT' })
+        setNotifUnread(0)
+      }
     } catch {
-      /* abaikan — tetap tampilkan drawer */
-    } finally {
-      setKomenLoading(false)
+      /* abaikan */
     }
+  }
+
+  const bukaDariNotif = (n: Notif) => {
+    setOpenNotif(false)
+    if (n.id_ref) nav(`${basePath}/${n.id_ref}`)
   }
 
   return (
     <>
       <div className="flex items-center justify-between pb-1">
-        <p className="text-sm text-text-secondary">Ayo ngobrol & berbagi info dengan tetangga</p>
+        <p className="text-sm text-text-secondary">Ayo ngobrol &amp; berbagi info dengan tetangga</p>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
@@ -226,9 +177,9 @@ export function ForumFeed({ canAnnounce }: Props) {
       </div>
 
       {err && (
-        <div className="mt-4 rounded-2xl border border-danger/20 bg-danger/5 p-4 text-sm text-danger">
+        <div className="mt-3 rounded-2xl border border-border bg-surface-card p-4 text-sm text-danger">
           {err}
-          <button type="button" onClick={muat} className="ml-2 font-semibold underline">
+          <button type="button" onClick={() => void muat()} className="ml-2 font-semibold underline">
             Muat ulang
           </button>
         </div>
@@ -237,135 +188,74 @@ export function ForumFeed({ canAnnounce }: Props) {
       {loading ? (
         <div className="mt-4 space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-text-disabled/10" />
+            <div key={i} className="skeleton h-32 rounded-2xl" />
           ))}
         </div>
       ) : daftar.length === 0 ? (
-        <div className="mt-10 rounded-2xl border border-dashed border-border p-8 text-center">
+        <div className="mt-4 rounded-2xl border border-dashed border-border p-8 text-center">
           <p className="font-semibold text-text-primary">Belum ada diskusi</p>
-          <p className="mt-1 text-sm text-text-secondary">Mulai dengan thread pertama Anda.</p>
+          <p className="mt-1 text-sm text-text-secondary">Jadilah yang pertama mengobrol dengan tetangga.</p>
         </div>
       ) : (
-        <div className="mt-3 space-y-3 pb-24">
+        <ul className="mt-3 space-y-3">
           {daftar.map((t) => (
-            <button
-              key={t.id_thread}
-              type="button"
-              onClick={() => bukaDetail(t)}
-              className={cn(
-                'block w-full rounded-2xl border p-4 text-left transition-all active:scale-[0.99]',
-                t.tipe_thread === 'Pengumuman' ? 'border-primary/25 bg-primary/5' : 'border-border bg-surface-card'
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                <AvatarWarga nama={t._penulis} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-text-primary">{t._penulis}</p>
-                  <p className="text-[11px] text-text-secondary">
-                    {timeAgo(t.created_at)}
-                    {t.tipe_thread === 'Pengumuman' && (
-                      <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">PENGUMUMAN</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <p className="mt-2.5 font-semibold text-text-primary">{t.judul}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-text-secondary">{t.konten}</p>
-              <div className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-                <Icon name="chat" size={14} />
-                <span>{t.komentar_count ?? 0} komentar</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Drawer detail thread + komentar */}
-      <Drawer open={!!openDetail} onClose={() => setOpenDetail(null)} title={openDetail?.judul ?? ''}>
-        {openDetail && (
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2.5">
-              <AvatarWarga nama={detail?.thread.nama_penulis || openDetail.nama_penulis || roleLabel} />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-text-primary">{detail?.thread.nama_penulis || roleLabel}</p>
-                <p className="text-[11px] text-text-secondary">{timeAgo(openDetail.created_at)}</p>
-              </div>
-            </div>
-            <div className="mt-3 text-[15px] leading-relaxed text-text-primary">{renderRich(openDetail.konten)}</div>
-
-            <div className="my-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              <Icon name="chat" size={14} />
-              Komentar ({detail?.komentar.length ?? 0})
-            </div>
-
-            {detLoading ? (
-              <div className="space-y-3">
-                {[0, 1].map((i) => (
-                  <div key={i} className="h-14 animate-pulse rounded-xl bg-text-disabled/10" />
-                ))}
-              </div>
-            ) : (detail?.komentar ?? []).length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border p-5 text-center text-sm text-text-secondary">
-                Belum ada komentar. Jadilah yang pertama!
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {(detail?.komentar ?? []).map((k) => (
-                  <div key={k.id_komentar} className="flex gap-2.5">
-                    <AvatarWarga nama={k.nama_penulis || '?'} size={8} />
-                    <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md bg-text-disabled/8 px-3.5 py-2.5">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <p className="truncate text-xs font-semibold text-text-primary">{k.nama_penulis || 'Warga'}</p>
-                        <span className="shrink-0 text-[10px] text-text-secondary">{timeAgo(k.created_at)}</span>
-                      </div>
-                      <p className="mt-0.5 text-sm text-text-primary">{renderRich(k.komentar)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-5 flex items-end gap-2 border-t border-border pt-4">
-              <div className="min-w-0 flex-1">
-                <MentionArea
-                  value={komentar}
-                  onChange={setKomentar}
-                  namaWarga={namaWarga}
-                  placeholder="@sebut atau balas…"
-                  rows={1}
-                />
-              </div>
+            <li key={t.id_thread}>
               <button
                 type="button"
-                disabled={!komentar.trim() || komenLoading}
-                onClick={kirimKomentar}
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-lg shadow-primary/25 transition-transform active:scale-95 disabled:opacity-40"
-                aria-label="Kirim komentar"
+                onClick={() => nav(`${basePath}/${t.id_thread}`)}
+                className={cn(
+                  'w-full rounded-2xl border border-border bg-surface-card p-4 text-left shadow-sm transition-transform active:scale-[0.99]',
+                  t.tipe_thread === 'Pengumuman' && 'border-l-4 border-l-primary'
+                )}
               >
-                <Icon name="send" size={18} />
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
+                    style={{ background: warnaInisial(t._penulis) }}
+                  >
+                    {inisial(t._penulis)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-text-primary">{t._penulis}</span>
+                    <span className="block text-xs text-text-secondary">{timeAgo(t.created_at)}</span>
+                  </span>
+                  {t.tipe_thread === 'Pengumuman' && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                      <Icon name="megaphone" size={12} /> Pengumuman
+                    </span>
+                  )}
+                </div>
+                <h2 className="mt-2.5 text-[15px] font-bold text-text-primary">{t.judul}</h2>
+                <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-text-secondary">{renderRich(t.konten)}</p>
+                {t.foto_url && /^(https?:\/\/|\/)/.test(t.foto_url) && (
+                  <img src={t.foto_url} alt={t.judul} loading="lazy" className="mt-3 aspect-[4/3] w-full rounded-xl border border-border object-cover" />
+                )}
+                <span className="mt-3 flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+                  <Icon name="chat" size={14} /> {t.komentar_count ?? 0} komentar
+                </span>
               </button>
-            </div>
-          </div>
-        )}
-      </Drawer>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      {/* Drawer buat thread */}
-      <Drawer open={openBuat} onClose={() => setOpenBuat(false)} title="Buat thread baru" subtitle="Tulis pertanyaan atau kabar untuk warga satu RT">
+      {/* Compose */}
+      <Drawer open={openBuat} onClose={() => setOpenBuat(false)} title="Buat postingan" subtitle="Bagikan kabar, tanya, atau info ke warga">
         <div className="space-y-4">
           {canAnnounce && (
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-text-disabled/8 p-1">
-              {(['Diskusi', 'Pengumuman'] as const).map((o) => (
+            <div className="flex gap-2">
+              {['Diskusi', 'Pengumuman'].map((o) => (
                 <button
                   key={o}
                   type="button"
                   onClick={() => setTipe(o)}
                   className={cn(
-                    'h-11 rounded-xl text-sm font-semibold transition-all',
-                    tipe === o ? 'bg-surface-card text-primary shadow' : 'text-text-secondary'
+                    'h-11 flex-1 rounded-xl text-sm font-semibold transition-colors',
+                    tipe === o ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'border border-border bg-surface text-text-secondary'
                   )}
                 >
                   {o === 'Pengumuman' ? (
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center gap-1.5">
                       <Icon name="megaphone" size={14} /> Pengumuman
                     </span>
                   ) : (
@@ -376,38 +266,43 @@ export function ForumFeed({ canAnnounce }: Props) {
             </div>
           )}
           <div>
-            <label htmlFor="judul-thread" className="mb-1.5 block text-xs font-semibold text-text-secondary">
+            <label htmlFor="fd-judul" className="mb-2 block text-[13px] font-semibold text-text-secondary">
               JUDUL
             </label>
             <input
-              id="judul-thread"
+              id="fd-judul"
               value={judul}
               onChange={(e) => setJudul(e.target.value)}
+              placeholder="Ringkasan singkat…"
               maxLength={120}
-              placeholder="Ringkas topiknya…"
-              className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+              className="h-12 w-full rounded-2xl border border-border bg-surface px-4 text-base text-text-primary outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-text-secondary">
-              ISI — ketik <span className="text-primary">@</span> untuk menyebut warga
+            <label htmlFor="fd-konten" className="mb-2 block text-[13px] font-semibold text-text-secondary">
+              ISI
             </label>
-            <MentionArea value={konten} onChange={setKonten} namaWarga={namaWarga} placeholder="Ceritakan detailnya…" rows={5} />
+            <div className="rounded-2xl border border-border bg-surface p-3 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+              <MentionArea value={konten} onChange={setKonten} namaWarga={namaWarga} rows={4} placeholder="Tulis… ketik @ untuk menyebut warga" />
+            </div>
+          </div>
+          <div>
+            <label className="mb-2 block text-[13px] font-semibold text-text-secondary">FOTO</label>
+            <FotoField value={foto} onChange={setFoto} />
           </div>
           {pesan && <p className="text-sm text-danger">{pesan}</p>}
           <button
             type="button"
             disabled={kirim}
             onClick={kirimThread}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-semibold text-white shadow-lg shadow-primary/25 transition-transform active:scale-[0.98] disabled:opacity-50"
+            className="h-12 w-full rounded-2xl bg-primary font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
           >
-            {kirim ? 'Mengirim…' : 'Kirim ke Forum'}
-            <Icon name="send" size={16} />
+            {kirim ? 'Mengirim…' : 'Kirim'}
           </button>
         </div>
       </Drawer>
 
-      {/* Drawer notifikasi */}
+      {/* Notifikasi */}
       <Drawer open={openNotif} onClose={() => setOpenNotif(false)} title="Notifikasi" subtitle="Sebutan @ di forum">
         {notifList.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
@@ -420,7 +315,7 @@ export function ForumFeed({ canAnnounce }: Props) {
               <li key={n.id_notifikasi}>
                 <button
                   type="button"
-                  onClick={() => void bukaDariNotif(n)}
+                  onClick={() => bukaDariNotif(n)}
                   className="flex w-full items-start gap-3 px-1 py-3 text-left transition-colors active:bg-text-disabled/8"
                 >
                   <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">

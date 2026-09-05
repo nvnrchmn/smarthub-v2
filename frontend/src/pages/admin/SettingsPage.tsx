@@ -19,8 +19,8 @@ export function SettingsPage() {
 
   const load = async () => {
     try {
-      const r = await api('/admin/settings')
-      if (r.ok) setSt((await r.json()) as XenditStatus)
+      const r = await api<XenditStatus>('/admin/settings')
+      setSt(r)
     } catch { /* server belum punya endpoint? abaikan */ }
   }
 
@@ -31,22 +31,17 @@ export function SettingsPage() {
     setBusy(true)
     setMsg(null)
     try {
-      const r = await api('/admin/settings', {
+      const j = await api<{ message?: string; saved?: number }>('/admin/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ xendit_secret_key: secret, xendit_webhook_token: token }),
       })
-      const j = (await r.json()) as { message?: string; error?: string }
-      if (r.ok) {
-        setMsg({ ok: true, text: j.message ?? 'Kredensial disimpan.' })
-        setSecret('')
-        setToken('')
-        await load()
-      } else {
-        setMsg({ ok: false, text: j.error ?? 'Gagal menyimpan.' })
-      }
-    } catch {
-      setMsg({ ok: false, text: 'Gagal menyimpan kredensial.' })
+      setMsg({ ok: true, text: j.message ?? 'Kredensial disimpan.' })
+      setSecret('')
+      setToken('')
+      await load()
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : 'Gagal menyimpan kredensial.' })
     } finally {
       setBusy(false)
     }
