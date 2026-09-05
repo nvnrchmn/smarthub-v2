@@ -95,6 +95,6 @@ func (h *Handler) Update(c fiber.Ctx) error {
 }
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
-	app.Get("/cms", h.Get)
+	app.Get("/cms/landing", h.Get)
 	app.Put("/admin/cms/:section", mw.AuthRequired, mw.RoleRequired("super_admin"), h.Update)
 }

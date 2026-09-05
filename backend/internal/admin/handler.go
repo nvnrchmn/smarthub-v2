@@ -71,11 +71,24 @@ func (h *Handler) ListUsers(c fiber.Ctx) error {
 
 func (h *Handler) GetSettings(c fiber.Ctx) error {
 	key := c.Query("key")
-	if key == "" {
-		return c.JSON(fiber.Map{"error": "key wajib"})
+	if key != "" {
+		val, _ := h.st.Get(key)
+		return c.JSON(fiber.Map{"key": key, "value": val})
 	}
-	val, _ := h.st.Get(key)
-	return c.JSON(fiber.Map{"key": key, "value": val})
+	// Return status Xendit credentials
+	return c.JSON(fiber.Map{
+		"xendit_secret_key_set": h.st.GetSecret("xendit_secret_key") != "",
+		"xendit_secret_key_masked": maskSecret(h.st.GetSecret("xendit_secret_key")),
+		"xendit_webhook_token_set": h.st.GetSecret("xendit_webhook_token") != "",
+		"xendit_webhook_token_masked": maskSecret(h.st.GetSecret("xendit_webhook_token")),
+	})
+}
+
+func maskSecret(s string) string {
+	if s == "" || len(s) <= 8 {
+		return "***"
+	}
+	return s[:4] + "..." + s[len(s)-4:]
 }
 
 func (h *Handler) SaveSettings(c fiber.Ctx) error {
