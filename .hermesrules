@@ -122,3 +122,14 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 - **Login Page**: Glass card, decorative backdrop blur, refined inputs
 - **Backend**: Tidak ada perubahan API — semua logic identik
 - **Dark mode compatible**: Semua token-aware, tidak ada hardcoded colors
+
+## CI/CD (ditambahkan 2026-09-11)
+- Workflow: `.github/workflows/deploy.yml` (push ke `main` → build FE + Go → deploy → restart → health check).
+- Build: frontend Vite (`frontend/`, `npm ci && npm run build`), backend Go 1.25 (`cd backend && go build ./cmd/api`).
+- Deploy target (JANGAN diubah tanpa cek server):
+  - frontend dist → `/www/wwwroot/smarthub.logikraf.id/` (nginx root, langsung; rsync `--delete` + `sudo rsync`)
+  - binary → `/usr/local/bin/smarthub-server` (`sudo rsync`, mode 755)
+  - service systemd: `smarthub` (ExecStart=/usr/local/bin/smarthub-server, port 8082)
+- Secrets GitHub: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (kunci `~/.ssh/github-actions/deploy_key`).
+- Catatan: repo `logikraf-smarthub` (lama) BUKAN sumber yang live → workflow-nya dinonaktifkan (`deploy.yml.disabled`).
+- Kuota Actions: artifact `retention-days: 1`, cache dinonaktifkan (hemat storage).
