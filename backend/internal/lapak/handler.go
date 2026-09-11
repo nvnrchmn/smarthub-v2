@@ -19,9 +19,9 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/lapak")
 	r.Use(mw.AuthRequired)
-	r.Get("/", h.GetAll)
+	r.Get("", h.GetAll)
 	r.Get("/:id", h.GetByID)
-	r.Post("/", h.Create)
+	r.Post("", h.Create)
 	r.Put("/:id/status", h.SetStatus)
 	r.Delete("/:id", h.Delete)
 }

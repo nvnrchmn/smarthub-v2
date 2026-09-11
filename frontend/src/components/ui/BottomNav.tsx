@@ -10,6 +10,7 @@ const navItems: { path: string; label: string; icon: IconName }[] = [
   { path: '/app/tagihan', label: 'Tagihan', icon: 'file' },
   { path: '/app/forum', label: 'Forum', icon: 'chat' },
   { path: '/app/lapak', label: 'Lapak', icon: 'store' },
+  { path: '/app/warga', label: 'Warga', icon: 'users' },
   { path: '/app/pengaturan', icon: 'settings', label: 'Pengaturan' },
 ]
 

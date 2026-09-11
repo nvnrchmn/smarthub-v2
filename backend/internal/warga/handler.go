@@ -18,8 +18,9 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/warga")
-	r.Get("/", mw.AuthRequired, h.GetWargaByTenant)
+	r.Get("", mw.AuthRequired, h.GetWargaByTenant)
 	r.Get("/rumah/:rumah_id", mw.AuthRequired, h.GetWargaByRumah)
+	r.Get("/me", mw.AuthRequired, h.GetWargaMe)
 
 	// Mutasi data warga hanya untuk pengurus RT (ketua_rt / super_admin)
 	m := app.Group("/warga")
@@ -157,4 +158,39 @@ func (h *Handler) DeleteWarga(c fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"message": "warga berhasil dihapus"})
+}
+
+func (h *Handler) GetWargaMe(c fiber.Ctx) error {
+	userID := c.Locals("user_id").(int)
+	tenantID := c.Locals("tenant_id").(int)
+	role := c.Locals("role").(string)
+
+	// Pengurus (ketua_rt/super_admin) bisa lihat semua
+	if role == "ketua_rt" || role == "super_admin" {
+		wargas, err := h.service.GetWargaByTenant(tenantID, userID, role)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(wargas)
+	}
+
+	// User biasa: data sendiri + satu rumah
+	me, err := h.service.repo.GetWargaByUserID(userID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "data warga tidak ditemukan"})
+	}
+
+	result := []model.Warga{*me}
+	if me.RumahID != nil {
+		housemates, _ := h.service.GetWargaByRumah(*me.RumahID, tenantID)
+		for _, w := range housemates {
+			if w.ID != me.ID {
+				// Mask NIK/NoKK untuk yang bukan diri sendiri
+				w.NIK = ""
+				w.NoKK = ""
+				result = append(result, w)
+			}
+		}
+	}
+	return c.JSON(result)
 }

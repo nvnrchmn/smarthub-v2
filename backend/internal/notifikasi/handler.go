@@ -18,7 +18,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/notifikasi")
 	r.Use(mw.AuthRequired)
-	r.Get("/", h.List)
+	r.Get("", h.List)
 	r.Put("/read-all", h.ReadAll)
 	r.Put("/:id/read", h.MarkRead)
 	r.Post("/upload-ktp", h.UploadKTP)

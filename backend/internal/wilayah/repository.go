@@ -43,3 +43,15 @@ func (r *Repository) UpdateRumah(rumah *model.Rumah) error {
 func (r *Repository) DeleteRumah(id int) error {
 	return r.db.Delete(&model.Rumah{}, id).Error
 }
+
+func (r *Repository) GetWargaByRumah(rumahID int) ([]model.Warga, error) {
+	var wargas []model.Warga
+	err := r.db.Where("id_rumah = ?", rumahID).Order("status_hubungan, nama_lengkap").Find(&wargas).Error
+	return wargas, err
+}
+
+func (r *Repository) CountWargaByRumah(rumahID int) (int64, error) {
+	var count int64
+	err := r.db.Model(&model.Warga{}).Where("id_rumah = ?", rumahID).Count(&count).Error
+	return count, err
+}

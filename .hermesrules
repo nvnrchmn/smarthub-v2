@@ -1,5 +1,8 @@
 # Smarthub v2 — Project Context
 
+## Status (2026-09-06)
+- Forum: nested komentar (parent_komentar_id + foto_url di forum_komentar, model/repo/handler selesai) + kompresi gambar upload (JPEG q80 / PNG BestCompression, max lebar 1200px). Migration `backend/migrations/add_forum_parent_komentar.sql` BELUM dijalankan; binary belum di-build/deploy.
+
 ## Status (2026-09-05)
 Fase 0-7 + UI/UX layer restructure + bento grid dashboard (10 heuristik UX) SELESAI. Live: https://smarthub.logikraf.id
 Repo: github.com/nvnrchmn/smarthub-v2 (branch main). DB: smarthub_v2 (MySQL), port 8082.
@@ -33,6 +36,7 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 
 ## Konvensi
 - UI bahasa Indonesia; touch target >= 44px; input text-base (cegah iOS zoom); kontras AA; mode gelap otomatis via prefers-color-scheme (token warna = CSS var di index.css)
+- LoginPage (2026-09-06): redesign premium SaaS — kartu rounded-2xl center di h-dvh, input h-12 rounded-xl text-base + ikon kiri, tombol utama h-12, latar blur blob + dot grid dekoratif. LOGIC identik: login via nomor WA + password (tanpa Google OAuth), redirect per role. Public layout tetap pakai h-dvh (bukan min-h-screen).
 - Komponen UI: pakai `components/ui/bento.tsx` (BentoCard/KPI/ActionTile/Skeleton/EmptyState/ErrorState) & `Icon.tsx` (SVG, JANGAN emoji) — lihat docs/UX-HEURISTICS.md (10 heuristik Nielsen & psikologi UX, e3dc1f5)
 - Register publik = warga + auto-login (token langsung) + profil warga dibuat atomik (tx) — jangan CreateUser terpisah
 - Tema: auto (OS) default; toggle dark/light menyimpan 'sh-theme' (light/dark) di localStorage & set data-theme di <html>; motion pakai class .page-enter/.sheet-panel/bg-shimmer (index.css) — hormati prefers-reduced-motion
@@ -104,3 +108,17 @@ docs/{PRD,Architecture,Design(arsip),DESIGN-SYSTEM,UX-HEURISTICS,DDL,task}.md di
 - HIGH: rate limiter 100/min in-memory tanpa TrustProxy → semua user 1 bucket 127.0.0.1; unknown route → 500 (ErrorHandler main.go:59-61 override); build rusak: blacklist.go panggil parseBearer undefined; password min 6 karakter; uang pakai float64; webhook mark PAID tanpa cek nominal; admin ListUsers ambil semua kolom.
 - HIGH frontend: JWT+profil di localStorage (tanpa httpOnly/refresh); GabungRTPage simpan token di kunci 'access_token' ≠ 'token' yang dibaca api.ts; tanpa handling 401/redirect; tanpa timeout/abort.
 - TINDAKAN SEGERA: rotate JWT_SECRET + tambah validasi role_for invite + json:"-" di PasswordHash + bereskan parseBearer.
+
+## UI/UX REDESIGN (2026-09-06)
+- **Full redesign** tampilan SaaS profesional (Linear/Stripe/Vercel style)
+- **CSS tokens**: Primary #0E764A (crisper emerald), refined neutrals, improved dark mode contrast
+- **File yang di-redesign**: index.css, LandingPage.tsx, Dashboard.tsx (admin/rt/warga), AdminLayout.tsx, bento.tsx, LoginPage.tsx
+- **bento.tsx**: 9 komponen diperbarui (BentoCard, KPI, ActionTile, SectionHead, Progress, Avatar, Skeleton, EmptyState, ErrorState) — API tetap sama
+- **AdminLayout**: Sidebar w-64, logo gradient "SH", nav sections (Keuangan/Konten/Sistem), active pill + left accent bar
+- **Landing Page**: Sticky glass navbar, hero gradient + floating orbs, feature cards, social proof, price card
+- **Admin Dashboard**: Premium welcome banner, KPI conic-gradient ring, MiniStat cards
+- **RT Dashboard**: Hero iuran card, compliance card, pending approvals dengan accent bar
+- **Warga Dashboard**: Status card, greeting header, token-aware status tints
+- **Login Page**: Glass card, decorative backdrop blur, refined inputs
+- **Backend**: Tidak ada perubahan API — semua logic identik
+- **Dark mode compatible**: Semua token-aware, tidak ada hardcoded colors

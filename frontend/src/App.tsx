@@ -1,3 +1,4 @@
+import { ToastProvider } from './context/ToastContext'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -20,21 +21,23 @@ import { UnauthorizedPage } from './pages/public/UnauthorizedPage'
 
 // Warga pages
 import { WargaDashboard } from './pages/warga/Dashboard'
-import { TagihanSayaPage } from './pages/warga/TagihanSayaPage'
 import { ForumWargaPage } from './pages/warga/ForumPage'
 import { LapakWargaPage } from './pages/warga/LapakPage'
 import { WargaPengaturanPage } from './pages/warga/PengaturanPage'
+import { WargaSayaPage } from './pages/warga/WargaSayaPage'
+import { TagihanWargaPage } from './pages/warga/TagihanCustomWargaPage'
 import { ForumDetailPage } from './pages/forum/ForumDetailPage'
 
 // RT pages
 import { RTDashboard } from './pages/rt/Dashboard'
-import { RTRumahPage } from './pages/rt/RumahPage'
+import { RumahPage as RTRumahPage } from './pages/rt/RumahPage'
 import { RTWargaPage } from './pages/rt/WargaPage'
-import { RTTagihanPage } from './pages/rt/TagihanPage'
+import { RTTagihanPage } from './pages/rt/TagihanCustomPage'
 import { ForumRT } from './pages/rt/ForumRT'
 import { LapakRT } from './pages/rt/LapakRT'
 import { RTPengaturanPage } from './pages/rt/PengaturanPage'
 import { RTSettlementPage } from './pages/rt/SettlementPage'
+import { PerbaikanDataRTPage } from './pages/rt/PerbaikanDataPage'
 import { LanggananPage } from './pages/rt/LanggananPage'
 
 // Admin pages
@@ -52,6 +55,8 @@ import { AnalyticsPage } from './pages/admin/AnalyticsPage'
 
 export default function App() {
   return (
+    <ToastProvider>
+
     <ThemeProvider>
     <AuthProvider>
       <Routes>
@@ -69,10 +74,11 @@ export default function App() {
         {/* Warga */}
         <Route element={<ProtectedRoute roles={['warga']}><AppLayout /></ProtectedRoute>}>
           <Route path="/app" element={<WargaDashboard />} />
-          <Route path="/app/tagihan" element={<TagihanSayaPage />} />
           <Route path="/app/forum" element={<ForumWargaPage />} />
           <Route path="/app/forum/:id" element={<ForumDetailPage />} />
           <Route path="/app/lapak" element={<LapakWargaPage />} />
+          <Route path="/app/warga" element={<WargaSayaPage />} />
+          <Route path="/app/tagihan" element={<TagihanWargaPage />} />
           <Route path="/app/pengaturan" element={<WargaPengaturanPage />} />
         </Route>
 
@@ -87,6 +93,8 @@ export default function App() {
           <Route path="/rt/lapak" element={<LapakRT />} />
           <Route path="/rt/pengaturan" element={<RTPengaturanPage />} />
           <Route path="/rt/settlement" element={<RTSettlementPage />} />
+          <Route path="/rt/perbaikan-data" element={<PerbaikanDataRTPage />} />
+          
           <Route path="/rt/langganan" element={<LanggananPage />} />
         </Route>
 
@@ -110,5 +118,6 @@ export default function App() {
       </Routes>
     </AuthProvider>
     </ThemeProvider>
+    </ToastProvider>
   )
 }

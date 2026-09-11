@@ -20,10 +20,11 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	r := app.Group("/forum")
 	r.Use(mw.AuthRequired)
-	r.Get("/", h.GetThreads)
-	r.Post("/", h.CreateThread)
+	r.Get("", h.GetThreads)
+	r.Post("", h.CreateThread)
 	r.Get("/:id", h.GetThread)
 	r.Post("/:id/komentar", h.CreateKomentar)
+	r.Delete("/:id/komentar/:idKomentar", h.DeleteKomentar)
 }
 
 func (h *Handler) GetThreads(c fiber.Ctx) error {
@@ -127,12 +128,52 @@ func (h *Handler) CreateKomentar(c fiber.Ctx) error {
 	}
 	k.IDThread = threadID
 	k.IDUser = c.Locals("user_id").(int)
-	if k.Komentar == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "komentar tidak boleh kosong"})
+	// Balasan boleh berisi teks dan/atau foto, minimal salah satu wajib ada.
+	if k.Komentar == "" && k.FotoURL == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "komentar atau foto tidak boleh kosong"})
+	}
+	// parent_komentar_id (dibaca dari body) wajib merujuk komentar di thread yang sama.
+	if k.ParentID != nil {
+		parent, err := h.service.repo.GetKomentarByID(*k.ParentID)
+		if err != nil || parent.IDThread != threadID {
+			return c.Status(400).JSON(fiber.Map{"error": "parent_komentar_id tidak valid"})
+		}
 	}
 	if err := h.service.CreateKomentar(&k); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	h.notifyMentions(thread.IDTenant, k.IDUser, k.Komentar, "komentar", &thread.IDThread, fmt.Sprintf("Anda disebut di komentar %q", thread.Judul))
+	if k.Komentar != "" {
+		h.notifyMentions(thread.IDTenant, k.IDUser, k.Komentar, "komentar", &thread.IDThread, fmt.Sprintf("Anda disebut di komentar %q", thread.Judul))
+	}
 	return c.Status(201).JSON(k)
+}
+
+func (h *Handler) DeleteKomentar(c fiber.Ctx) error {
+	threadID, _ := strconv.Atoi(c.Params("id"))
+	komentarID, _ := strconv.Atoi(c.Params("idKomentar"))
+	userID := c.Locals("user_id").(int)
+	tenantID := c.Locals("tenant_id").(int)
+
+	// Verifikasi thread milik tenant yang sama
+	thread, err := h.service.repo.GetThreadByID(threadID)
+	if err != nil || thread.IDTenant != tenantID {
+		return c.Status(404).JSON(fiber.Map{"error": "thread tidak ditemukan"})
+	}
+
+	// Cek komentar
+	k, err := h.service.repo.GetKomentarByID(komentarID)
+	if err != nil || k.IDThread != threadID {
+		return c.Status(404).JSON(fiber.Map{"error": "komentar tidak ditemukan"})
+	}
+
+	// Hanya penulis komentar atau admin yang boleh hapus
+	role := c.Locals("role").(string)
+	if k.IDUser != userID && role != "super_admin" {
+		return c.Status(403).JSON(fiber.Map{"error": "tidak punya akses"})
+	}
+
+	if err := h.service.repo.DeleteKomentar(komentarID); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "komentar dihapus"})
 }

@@ -1,78 +1,134 @@
 @import "tailwindcss";
 @import "@fontsource-variable/plus-jakarta-sans";
 
-/* Warna semantik dikontrol via CSS variable. Mode: AUTO (prefers-color-scheme)
-   adalah default; pengguna bisa override dengan <html data-theme="dark|light">
-   melalui toggle di UI (ThemeContext). */
+/* ==========================================================================
+   Smarthub Design Tokens — B2B SaaS Palette (Linear / Stripe / Vercel-inspired)
+   --------------------------------------------------------------------------
+   - Warna semantik dikontrol via CSS variable (--sh-*).
+   - Mode: AUTO (prefers-color-scheme) default; override manual via
+     <html data-theme="dark|light"> (ThemeContext).
+   - Brand tetap green, tapi diarahkan ke emerald yang lebih tajam & bersih
+     (#0E764A) — bukan forest yang keruh — plus ramping netral yang
+     desaturasi & ber-undertone hijau halus agar seluruh UI terasa premium.
+   ========================================================================== */
 @theme {
-  --color-primary: #1B6B4A;
-  --color-primary-50: #EBF5F0;
-  --color-primary-100: #C3E2D4;
+  /* -- Brand ----------------------------------------------------------- */
+  --color-primary: #0E764A;
+  --color-primary-50: #EAF6EF;
+  --color-primary-100: #CDE9DB;
+
+  /* -- Surface & text (di-resolve ke var runtime utk light/dark) ------- */
   --color-surface: var(--sh-surface);
   --color-surface-card: var(--sh-card);
   --color-border: var(--sh-border);
   --color-text-primary: var(--sh-text-1);
   --color-text-secondary: var(--sh-text-2);
   --color-text-disabled: var(--sh-text-3);
-  --color-status-paid: #22C55E;
-  --color-status-pending: #F59E0B;
-  --color-status-overdue: #EF4444;
-  --color-status-empty: #94A3B8;
-  --color-status-paid-bg: #DCFCE7;
-  --color-status-pending-bg: #FEF3C7;
-  --color-status-overdue-bg: #FEE2E2;
+
+  /* -- Status: teks & border + isian lunak (tint) ---------------------- */
+  --color-status-paid: #15803D;
+  --color-status-pending: #B45309;
+  --color-status-overdue: #B91C1C;
+  --color-status-empty: #64748B;
+  --color-status-paid-bg: #E9F6EF;
+  --color-status-pending-bg: #FDF3E1;
+  --color-status-overdue-bg: #FCE7E7;
   --color-status-empty-bg: #F1F5F9;
+
+  /* -- Alert: danger / warning ----------------------------------------- */
   --color-danger: #DC2626;
-  --color-warning: #D97706;
+  --color-warning: #C2620A;
+
+  /* -- Bayangan: netral-beralpha-rendah, radius besar = "soft float".
+        Dipakai juga sbg dasar glow: shadow-primary/25 mengganti warna. --- */
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 20 / 0.05);
+  --shadow-md: 0 4px 10px -4px rgb(15 23 20 / 0.07), 0 1px 3px 0 rgb(15 23 20 / 0.05);
+  --shadow-lg: 0 12px 28px -8px rgb(15 23 20 / 0.12), 0 4px 10px -6px rgb(15 23 20 / 0.06);
+  --shadow-xl: 0 20px 44px -12px rgb(15 23 20 / 0.16), 0 6px 14px -8px rgb(15 23 20 / 0.08);
+  --shadow-2xl: 0 32px 64px -16px rgb(15 23 20 / 0.22);
+
+  /* -- Tipografi -------------------------------------------------------- */
   --font-family-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
-/* ===== Token: mode light (default) ===== */
+/* ===== Token: mode light (default) =====
+   Netral ramping ber-undertone hijau sangat halus: surface sedikit abu-abu
+   agar kartu putih tampil bersih; border low-contrast tapi tetap tajam. */
 :root,
 :root[data-theme="light"] {
-  --sh-surface: #F7F8F6;
+  color-scheme: light;
+
+  --sh-surface: #F5F7F6;
   --sh-card: #FFFFFF;
-  --sh-border: #E7EBE8;
-  --sh-text-1: #1A1F1C;
-  --sh-text-2: #64716A;
-  --sh-text-3: #9AA6A0;
-  --sh-ph: #93A09A;
+  --sh-border: #E3E8E5;
+  --sh-text-1: #101613;
+  --sh-text-2: #57665E;
+  --sh-text-3: #8B9790;
+  --sh-ph: #8F9C95;
 }
 
-/* ===== Token: dark (auto via OS) ===== */
+/* ===== Token: dark (auto via OS) =====
+   Graphite ber-undertone hijau (bukan hitam pekat): surface paling dalam,
+   card naik satu anak tangga, border tipis +6% agar kartu terbaca. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --sh-surface: #0E1411;
-    --sh-card: #17201B;
-    --sh-border: #26332C;
-    --sh-text-1: #EDF2EE;
-    --sh-text-2: #9CA9A1;
-    --sh-text-3: #7A8A82;
-    --sh-ph: #8C9C94;
+    color-scheme: dark;
+
+    --sh-surface: #0A0F0D;
+    --sh-card: #131916;
+    --sh-border: #232C27;
+    --sh-text-1: #EFF4F1;
+    --sh-text-2: #A5B3AA;
+    --sh-text-3: #7D8B83;
+    --sh-ph: #8B9891;
   }
 }
 
 /* ===== Token: dark (override manual via toggle) ===== */
 :root[data-theme="dark"] {
-  --sh-surface: #0E1411;
-  --sh-card: #17201B;
-  --sh-border: #26332C;
-  --sh-text-1: #EDF2EE;
-  --sh-text-2: #9CA9A1;
-  --sh-text-3: #7A8A82;
-  --sh-ph: #8C9C94;
+  color-scheme: dark;
+
+  --sh-surface: #0A0F0D;
+  --sh-card: #131916;
+  --sh-border: #232C27;
+  --sh-text-1: #EFF4F1;
+  --sh-text-2: #A5B3AA;
+  --sh-text-3: #7D8B83;
+  --sh-ph: #8B9891;
 }
 
+/* ===== Fondasi visual ================================================= */
 html {
   font-family: var(--font-family-sans);
   background-color: var(--sh-surface);
   color: var(--sh-text-1);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--sh-text-3) 45%, transparent) transparent;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
+  line-height: 1.5;
+  /* Aurora halus di puncak layar — kedalaman ala Linear/Vercel.
+     Warna primary statis jadi konsisten di kedua mode. */
+  background-image: radial-gradient(
+    1100px 520px at 50% -220px,
+    color-mix(in srgb, var(--color-primary) 6%, transparent),
+    transparent 62%
+  );
+  background-attachment: fixed;
+}
+
+/* Header: tracking negatif ringan — karakteristik tipografi SaaS premium */
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
+  text-wrap: balance;
 }
 
 /* Transisi tema lembut */
@@ -80,21 +136,37 @@ body, .theme-smooth {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Heuristik 4: visibilitas fokus keyboard (aksesibilitas) */
+/* Heuristik: visibilitas fokus keyboard (aksesibilitas) */
 :focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 65%, transparent);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  color: var(--sh-text-1);
 }
 
-/* scrollbar tipis */
+/* Webkit scrollbar tipis senada token */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sh-text-3) 40%, transparent);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--sh-text-3) 60%, transparent);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* scrollbar tersembunyi utk carousel horizontal */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Placeholder terbaca di mode terang & gelap (heuristic: kontras teks) */
+/* Placeholder terbaca di mode terang & gelap (kontras teks) */
 ::placeholder {
   color: var(--sh-ph);
   opacity: 1;
@@ -103,7 +175,7 @@ body, .theme-smooth {
 /* touch: hilangkan 300ms tap delay */
 button, a { touch-action: manipulation; }
 
-/* ===== Motion system — elegan, halus, hormati reduced-motion ===== */
+/* ===== Motion system — elegan, halus, hormati reduced-motion ========== */
 @keyframes shFadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -140,10 +212,15 @@ button, a { touch-action: manipulation; }
 /* Micro-interaction: kartu/aksi terasa hidup tapi tidak berat */
 .press { transition: transform 0.16s ease, box-shadow 0.2s ease; }
 .press:active { transform: scale(0.97); }
-.lift { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease; }
-.lift:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -12px rgb(0 0 0 / 0.18); }
+.lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -14px rgb(15 23 20 / 0.18), 0 4px 10px -6px rgb(15 23 20 / 0.08);
+}
 
-/* Skeleton shimmer (psikologi: persepsi kecepatan) */
+/* Skeleton shimmer (persepsi kecepatan) — senada border/card */
 .bg-shimmer {
   background: linear-gradient(110deg,
     color-mix(in srgb, var(--sh-border) 92%, transparent) 8%,
@@ -167,3 +244,5 @@ button:not(:disabled):active { transform: scale(0.97); }
     transition-duration: 0.01ms !important;
   }
 }
+@keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.animate-slide-in { animation: slide-in 0.3s ease-out; }

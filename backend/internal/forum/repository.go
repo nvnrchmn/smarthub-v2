@@ -31,13 +31,26 @@ func (r *Repository) GetThreadByID(id int) (*model.Thread, error) {
 	return &t, err
 }
 
+// CreateKomentar menyimpan komentar/balasan. parent_komentar_id & foto_url ikut
+// tersimpan karena sudah menjadi kolom pada model.Komentar.
 func (r *Repository) CreateKomentar(k *model.Komentar) error {
 	return r.db.Create(k).Error
 }
 
+// GetKomentarByID memuat satu komentar — dipakai untuk validasi balasan
+// (parent_komentar_id harus komentar di thread yang sama).
+func (r *Repository) GetKomentarByID(id int) (*model.Komentar, error) {
+	var k model.Komentar
+	err := r.db.First(&k, id).Error
+	return &k, err
+}
+
+// GetKomentarByThread mengembalikan SEMUA komentar thread (akar & balasan, flat).
+// Urutan dibuat_at ASC (id_komentar sebagai tie-breaker agar pohon stabil);
+// frontend yang menyusun struktur bersarang dari parent_komentar_id.
 func (r *Repository) GetKomentarByThread(threadID int) ([]model.Komentar, error) {
 	var komentar []model.Komentar
-	err := r.db.Where("id_thread = ?", threadID).Order("created_at ASC").Find(&komentar).Error
+	err := r.db.Where("id_thread = ?", threadID).Order("created_at ASC, id_komentar ASC").Find(&komentar).Error
 	return komentar, err
 }
 
@@ -126,4 +139,8 @@ func (r *Repository) CountKomentarByThreads(threadIDs []int) (map[int]int, error
 		counts[row.IDThread] = row.Total
 	}
 	return counts, nil
+}
+
+func (r *Repository) DeleteKomentar(id int) error {
+	return r.db.Delete(&model.Komentar{}, id).Error
 }

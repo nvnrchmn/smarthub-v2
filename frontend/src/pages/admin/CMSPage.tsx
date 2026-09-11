@@ -42,7 +42,7 @@ export function AdminCMSPage() {
     try {
       await api(`/cms/landing/${activeSection}`, {
         method: 'PUT',
-        body: JSON.stringify(sections[activeSection])
+        body: JSON.stringify({ data: sections[activeSection] })
       })
       setSuccess('Perubahan berhasil disimpan')
       setTimeout(() => setSuccess(''), 3000)

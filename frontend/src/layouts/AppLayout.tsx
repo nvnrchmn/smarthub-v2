@@ -25,7 +25,7 @@ export function AppLayout() {
       {!hideNav && (
         <>
           <BottomNav />
-          <div className="fixed bottom-20 right-4 z-50">
+          <div className={cn("fixed bottom-20 right-4 z-50", pathname.includes('/forum') && 'hidden')}>
             <NotificationBell />
           </div>
         </>

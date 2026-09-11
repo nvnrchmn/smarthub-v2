@@ -58,3 +58,11 @@ func (r *Repository) UpdateWarga(warga *model.Warga) error {
 func (r *Repository) DeleteWarga(id int) error {
 	return r.db.Delete(&model.Warga{}, id).Error
 }
+
+func (r *Repository) GetWargaByUserID(userID int) (*model.Warga, error) {
+	var warga model.Warga
+	if err := r.db.Where("id_user = ?", userID).First(&warga).Error; err != nil {
+		return nil, err
+	}
+	return &warga, nil
+}

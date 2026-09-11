@@ -31,3 +31,21 @@ func (s *Service) UpdateRumah(rumah *model.Rumah) error {
 func (s *Service) DeleteRumah(id int) error {
 	return s.repo.DeleteRumah(id)
 }
+
+func (s *Service) EnrichRumahWithCount(rumahs []model.Rumah) ([]map[string]interface{}, error) {
+	result := make([]map[string]interface{}, len(rumahs))
+	for i, r := range rumahs {
+		count, _ := s.repo.CountWargaByRumah(r.ID)
+		result[i] = map[string]interface{}{
+			"id_rumah":          r.ID,
+			"id_tenant":       r.TenantID,
+			"nama_jalan_gang": r.NamaJalanGang,
+			"nomor_rumah":     r.NomorRumah,
+			"status_hunian":   r.StatusHunian,
+			"created_at":      r.CreatedAt,
+			"updated_at":      r.UpdatedAt,
+			"total_penghuni":  count,
+		}
+	}
+	return result, nil
+}

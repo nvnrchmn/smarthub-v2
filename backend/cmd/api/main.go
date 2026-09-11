@@ -14,6 +14,7 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/internal/cron"
 	"github.com/nvnrchmn/smarthub-v2/internal/forum"
 	"github.com/nvnrchmn/smarthub-v2/internal/keuangan"
+	"github.com/nvnrchmn/smarthub-v2/internal/tagihan_custom"
 	"github.com/nvnrchmn/smarthub-v2/internal/lapak"
 	"github.com/nvnrchmn/smarthub-v2/internal/middleware"
 	"github.com/nvnrchmn/smarthub-v2/internal/notifikasi"
@@ -22,6 +23,7 @@ import (
 	"github.com/nvnrchmn/smarthub-v2/internal/upload"
 	"github.com/nvnrchmn/smarthub-v2/internal/warga"
 	"github.com/nvnrchmn/smarthub-v2/internal/wilayah"
+	"github.com/nvnrchmn/smarthub-v2/internal/perbaikan"
 	"github.com/nvnrchmn/smarthub-v2/pkg/database"
 	"github.com/nvnrchmn/smarthub-v2/pkg/encryption"
 	"github.com/nvnrchmn/smarthub-v2/pkg/jwt"
@@ -97,7 +99,7 @@ func main() {
 	}))
 
 	// Rate limiting — 100 request per menit per IP asli (TrustProxy aktif)
-	app.Use(middleware.RateLimiter.Limit(100))
+	app.Use(middleware.RateLimiter.Limit(200))
 
 	app.Get("/healthz", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok", "db": "connected"})
@@ -133,11 +135,20 @@ func main() {
 	// Warga
 	wargaHandler.RegisterRoute(app, mw)
 
+	// Perbaikan Data
+	perbaikanRepo := perbaikan.NewRepository(db.SQL)
+	perbaikanHandler := perbaikan.NewHandler(perbaikanRepo)
+	perbaikanHandler.RegisterRoute(app, mw)
+
 	// Keuangan
 	keuanganRepo := keuangan.NewRepository(db.SQL)
 	keuanganService := keuangan.NewService(keuanganRepo, settingsStore)
 	keuanganHandler := keuangan.NewHandler(keuanganService)
 	keuanganHandler.RegisterRoute(app, mw)
+	// Tagihan Custom
+	tagihanCustomRepo := tagihan_custom.NewRepository(db.SQL)
+	tagihanCustomHandler := tagihan_custom.NewHandler(tagihanCustomRepo)
+	tagihanCustomHandler.RegisterRoute(app, mw)
 
 	// Forum
 	forumRepo := forum.NewRepository(db.SQL)

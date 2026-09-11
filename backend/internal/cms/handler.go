@@ -78,6 +78,16 @@ func (h *Handler) Get(c fiber.Ctx) error {
 	return c.JSON(cms.Data)
 }
 
+// GetSection returns a single section by path param (e.g. /cms/landing/hero)
+func (h *Handler) GetSection(c fiber.Ctx) error {
+	section := c.Params("section")
+	cms, err := h.service.Get(section)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "section tidak ditemukan"})
+	}
+	return c.JSON(cms.Data)
+}
+
 // Admin endpoints
 func (h *Handler) Update(c fiber.Ctx) error {
 	section := c.Params("section")
@@ -96,5 +106,7 @@ func (h *Handler) Update(c fiber.Ctx) error {
 
 func (h *Handler) RegisterRoute(app fiber.Router, mw *middleware.AuthMiddleware) {
 	app.Get("/cms/landing", h.Get)
+	app.Get("/cms/landing/:section", h.GetSection)
+	app.Put("/cms/landing/:section", mw.AuthRequired, mw.RoleRequired("super_admin"), h.Update)
 	app.Put("/admin/cms/:section", mw.AuthRequired, mw.RoleRequired("super_admin"), h.Update)
 }
